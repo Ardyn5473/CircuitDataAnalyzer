@@ -1,0 +1,2788 @@
+<title>Circuit Data Analyzer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{
+  --bg:#0d1014; --bg2:#141920; --bg3:#1b222c; --line:#28313d; --line2:#3a4655;
+  --fg:#e8edf4; --fg2:#9aa8ba; --fg3:#6c7a8c;
+  --accent:#38bdf8; --good:#4ade80; --warn:#fbbf24; --bad:#f87171; --purple:#c084fc;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+  --hdr:44px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:13px;overflow:hidden;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:var(--bg3);border:1px solid var(--line2);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{background:var(--line)}
+button.on{background:var(--accent);border-color:var(--accent);color:#04121c;font-weight:700}
+button:disabled{opacity:.4;cursor:default}
+select,input[type=text],input[type=number],textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:5px 7px}
+textarea{width:100%;resize:vertical;line-height:1.55;font-size:12.5px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.hide{display:none !important}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+
+#app{display:flex;flex-direction:column;height:100%}
+#topbar{height:var(--hdr);flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:0 10px;
+  background:var(--bg2);border-bottom:1px solid var(--line)}
+#logo{font-weight:800;letter-spacing:.06em;font-size:13px;color:var(--accent);white-space:nowrap}
+#logo small{color:var(--fg3);font-weight:600;letter-spacing:0}
+#sessName{color:var(--fg2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0}
+
+#sessChips{flex:0 0 auto;display:flex;gap:6px;padding:5px 10px;background:var(--bg2);
+  border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+#sessChips::-webkit-scrollbar{display:none}
+.chip{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;padding:3px 8px;border-radius:20px;
+  background:var(--bg3);border:1px solid var(--line2);font-size:11.5px;white-space:nowrap}
+.chip b{color:var(--accent);font-size:12px}
+.chip .bt{font-family:var(--mono);color:var(--fg3)}
+.chip button{padding:0 4px;border:0;background:transparent;color:var(--fg3);font-size:13px;line-height:1;border-radius:4px}
+.chip button:hover{background:var(--bad);color:#fff}
+table.lt tr.shead td{background:var(--bg3);color:var(--accent);font-weight:700;font-size:11px;
+  letter-spacing:.04em;padding:4px 6px;cursor:default}
+table.lt tr.shead:hover td{background:var(--bg3)}
+
+#kpi{flex:0 0 auto;display:flex;background:var(--bg2);border-bottom:1px solid var(--line);
+  overflow-x:auto;scrollbar-width:none}
+#kpi::-webkit-scrollbar{display:none}
+.kv{padding:5px 12px;border-right:1px solid var(--line);min-width:82px;flex:0 0 auto}
+.kv .k{font-size:9.5px;letter-spacing:.09em;color:var(--fg3);text-transform:uppercase;white-space:nowrap}
+.kv .v{font-family:var(--mono);font-size:16px;font-weight:700;line-height:1.25;white-space:nowrap}
+.kv .v.sm{font-size:13px;font-weight:600}
+
+#main{flex:1 1 auto;display:grid;grid-template-columns:minmax(300px,26vw) 1fr;min-height:0}
+#left{display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0;min-width:0}
+#right{display:flex;flex-direction:column;min-height:0;min-width:0}
+.panel{display:flex;flex-direction:column;min-height:0}
+.ph{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:5px 9px;background:var(--bg2);
+  border-bottom:1px solid var(--line);font-size:10.5px;letter-spacing:.09em;color:var(--fg3);text-transform:uppercase}
+.ph .sp{flex:1}
+.ph button{padding:2px 7px;font-size:11px;letter-spacing:0;text-transform:none}
+
+#vidPanel{flex:0 0 auto;border-bottom:1px solid var(--line)}
+#vidStage{position:relative;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden}
+#vidStage>video,#vidStage>iframe,#vidStage>div#vidYT{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+#vidYT iframe{width:100%;height:100%}
+#vidEmpty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:7px;padding:12px;text-align:center;background:#0a0d11}
+#vidEmpty .or{color:var(--fg3);font-size:11px}
+#vidEmpty .note{color:var(--fg3);font-size:10.5px;line-height:1.5}
+.urow{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:center}
+#vidUrl{min-width:150px;flex:1 1 150px;font-size:11.5px}
+#vidBar{padding:6px 8px;background:var(--bg2);display:flex;flex-direction:column;gap:5px}
+#vidBar button{padding:3px 8px;font-size:11.5px}
+#vidInfo{font-size:11px;color:var(--fg2);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#vidClips{display:flex;gap:4px;flex-wrap:wrap}
+.vclip{padding:2px 7px !important;font-size:11px !important;border-radius:20px}
+.vclip.ok{border-color:var(--good)}
+.vclip.on{background:var(--accent);border-color:var(--accent);color:#04121c;font-weight:700}
+#vidMsg{margin-top:0;font-size:11px}
+
+#mapPanel{flex:1 1 46%;min-height:170px}
+#mapWrap{position:relative;flex:1 1 auto;min-height:0;background:#0a0d11}
+#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#tabsPanel{flex:1 1 54%;min-height:0;border-top:1px solid var(--line)}
+#tabbar{flex:0 0 auto;display:flex;background:var(--bg2);border-bottom:1px solid var(--line)}
+#tabbar button{border:0;border-radius:0;background:transparent;color:var(--fg3);padding:7px 11px;font-size:11.5px;
+  border-bottom:2px solid transparent;font-weight:600}
+#tabbar button.on{color:var(--fg);border-bottom-color:var(--accent);background:transparent}
+.tabbody{flex:1 1 auto;overflow:auto;min-height:0;padding:8px}
+
+#chartWrap{position:relative;flex:1 1 auto;min-height:0;background:var(--bg)}
+#chart{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;cursor:crosshair}
+
+table.lt{width:100%;border-collapse:collapse;font-size:12px}
+table.lt th{position:sticky;top:0;background:var(--bg2);color:var(--fg3);font-size:9.5px;letter-spacing:.07em;
+  text-transform:uppercase;text-align:right;padding:4px 5px;border-bottom:1px solid var(--line);z-index:2;font-weight:600}
+table.lt th:first-child,table.lt td:first-child{text-align:left}
+table.lt td{padding:3px 5px;text-align:right;border-bottom:1px solid #1a212a;font-family:var(--mono);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+table.lt tr{cursor:pointer}
+table.lt tr:hover td{background:#1a212b}
+table.lt tr.sel td{background:#182634}
+table.lt tr.ref td{background:#1d2a1f}
+table.lt tr.out td{color:var(--fg3)}
+.swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:#333}
+.best{color:var(--purple);font-weight:700}
+
+.chrow{display:flex;align-items:center;gap:7px;padding:5px 6px;border-bottom:1px solid #1a212a}
+.chrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chrow input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px}
+.chrow .u{color:var(--fg3);font-size:11px;font-family:var(--mono)}
+
+.fld{margin-bottom:11px}
+.fld label{display:block;color:var(--fg2);font-size:11px;margin-bottom:3px}
+.fld .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fld input[type=text],.fld input[type=number],.fld select{width:100%}
+.note{color:var(--fg3);font-size:11px;line-height:1.6;margin:6px 0}
+hr.sep{border:0;border-top:1px solid var(--line);margin:12px 0}
+h4{margin:0 0 7px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--fg3)}
+
+#drop{position:fixed;inset:0;background:rgba(6,10,14,.97);z-index:60;display:flex;align-items:center;
+  justify-content:center;padding:20px;overflow:auto}
+#drop .box{max-width:640px;width:100%;text-align:center}
+#drop h1{font-size:22px;margin:0 0 4px;letter-spacing:.02em}
+#drop h1 span{color:var(--accent)}
+#drop p{color:var(--fg2);line-height:1.75;margin:6px 0}
+#dz{border:2px dashed var(--line2);border-radius:14px;padding:34px 20px;margin:18px 0;background:var(--bg2);
+  transition:.15s;cursor:pointer}
+#dz.hot{border-color:var(--accent);background:#132430}
+#dz .big{font-size:15px;font-weight:700;margin-bottom:6px}
+#prog{margin-top:14px;color:var(--accent);font-family:var(--mono);font-size:12px;min-height:18px}
+#bar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:8px}
+#bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+.err{color:var(--bad);text-align:left;background:#221313;border:1px solid #4a2020;border-radius:8px;
+  padding:10px 12px;margin-top:12px;line-height:1.7;font-size:12px;white-space:pre-wrap}
+#recent{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+#recent button{text-align:left;font-size:12px}
+
+.modal{position:fixed;inset:0;background:rgba(4,7,10,.8);z-index:70;display:flex;align-items:center;
+  justify-content:center;padding:16px}
+.modal .card{background:var(--bg2);border:1px solid var(--line2);border-radius:12px;max-width:760px;width:100%;
+  max-height:88vh;overflow:auto;padding:18px}
+.modal h3{margin:0 0 10px;font-size:15px}
+.mapgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;align-items:center;font-size:12px}
+.mapgrid .lbl{color:var(--fg2)}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:var(--bg3);
+  border:1px solid var(--line2);border-radius:8px;padding:8px 14px;z-index:90;font-size:12.5px;
+  opacity:0;transition:.2s;pointer-events:none;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+
+@media (max-width:820px){
+  :root{--hdr:40px}
+  body{font-size:12.5px}
+  /* One scrolling column. #left becomes display:contents so the map, the graphs
+     and the tab panel are all direct children and can be reordered - the map
+     must sit immediately above the graphs, not above the lap table. */
+  #main{display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #left{display:contents}
+  #vidPanel{order:0;flex:0 0 auto}
+  #mapPanel{order:1;flex:0 0 auto;height:34vh;min-height:200px;border-bottom:1px solid var(--line)}
+  #right{order:2;flex:0 0 auto;height:80vh;min-height:340px}
+  #tabsPanel{order:3;flex:0 0 auto;height:58vh;min-height:300px;border-top:1px solid var(--line)}
+  .kv{min-width:70px;padding:4px 9px}
+  .kv .v{font-size:14px}
+  #logo small{display:none}
+}
+</style>
+
+<div id="app" class="hide">
+  <div id="topbar">
+    <div id="logo">CDA <small>Circuit Data Analyzer</small></div>
+    <div id="sessName">—</div>
+    <button id="btnPlay" title="再生 / 停止 (Space)">▶</button>
+    <button id="btnAdd" class="hide" title="別日のデータを追加して重ね合わせる">＋比較</button>
+    <button id="btnVideo" title="動画を同期して見る">動画</button>
+    <button id="btnLoad" title="データを読み込む">読込</button>
+  </div>
+
+  <div id="sessChips" class="hide"></div>
+
+  <div id="kpi">
+    <div class="kv"><div class="k">Track</div><div class="v sm" id="kTrack">—</div></div>
+    <div class="kv"><div class="k">Lap</div><div class="v" id="kLap">—</div></div>
+    <div class="kv"><div class="k">Lap Time</div><div class="v" id="kTime">—</div></div>
+    <div class="kv"><div class="k">Best</div><div class="v" id="kBest">—</div></div>
+    <div class="kv"><div class="k">&Delta; Time</div><div class="v" id="kDelta">—</div></div>
+    <div class="kv"><div class="k">Position</div><div class="v" id="kPos">—</div></div>
+    <div class="kv"><div class="k">Speed</div><div class="v" id="kSpd">—</div></div>
+    <div class="kv"><div class="k">Long G</div><div class="v" id="kGx">—</div></div>
+    <div class="kv"><div class="k">Lat G</div><div class="v" id="kGy">—</div></div>
+    <div class="kv"><div class="k">Yaw</div><div class="v" id="kYaw">—</div></div>
+    <div class="kv"><div class="k">Sector</div><div class="v sm" id="kSec">—</div></div>
+  </div>
+
+  <div id="main">
+    <div id="left">
+      <div id="vidPanel" class="panel hide">
+        <div class="ph">
+          <span>Video</span><span class="sp"></span>
+          <button id="vidLink" class="on" title="グラフ・マップと連動">連動</button>
+          <button id="vidClose" title="閉じる">×</button>
+        </div>
+        <div id="vidStage">
+          <video id="vidFile" class="hide" controls playsinline></video>
+          <div id="vidYT" class="hide"></div>
+          <div id="vidEmpty">
+            <button id="vidPickFile">動画ファイルを選ぶ</button>
+            <div class="or">または</div>
+            <div class="urow">
+              <input type="text" id="vidUrl" placeholder="YouTubeのURL（動画 / プレイリスト）">
+              <button id="vidLoadUrl">読込</button>
+            </div>
+            <div class="note">YouTubeはPCのローカル版 index.html でのみ利用できます</div>
+            <button id="vidRestore" class="hide"></button>
+          </div>
+        </div>
+        <div id="vidBar">
+          <div id="vidClips" class="hide"></div>
+          <div id="vidInfo">動画が読み込まれていません</div>
+          <div class="urow">
+            <button id="vidSync" class="on" title="いま表示中のコマと、グラフのカーソル位置を一致させる">ここで同期</button>
+            <button id="vidUnsync">解除</button>
+            <button id="vidAddMore">動画を追加</button>
+          </div>
+          <div id="vidMsg" class="err hide"></div>
+        </div>
+        <input type="file" id="vidFileInput" accept="video/*" multiple style="display:none">
+      </div>
+
+      <div id="mapPanel" class="panel">
+        <div class="ph">
+          <span>Track Map</span><span class="sp"></span>
+          <button id="mapLine" class="on" title="走行ラインを表示">Line</button>
+          <button id="mapColor" title="速度で色分け">Speed</button>
+          <button id="mapFit" title="全体表示">Fit</button>
+        </div>
+        <div id="mapWrap"><canvas id="map"></canvas></div>
+      </div>
+
+      <div id="tabsPanel" class="panel">
+        <div id="tabbar">
+          <button data-tab="laps" class="on">Laps</button>
+          <button data-tab="ch">Channels</button>
+          <button data-tab="note">Notes</button>
+          <button data-tab="set">Setup</button>
+        </div>
+
+        <div class="tabbody" id="tab-laps">
+          <div style="display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap">
+            <button id="lapBest">ベスト5</button>
+            <button id="lapClear">選択解除</button>
+            <label style="display:flex;align-items:center;gap:4px;color:var(--fg2);font-size:11.5px">
+              <input type="checkbox" id="hideOut" checked style="accent-color:var(--accent)">異常ラップを隠す</label>
+          </div>
+          <table class="lt"><thead><tr>
+            <th>Lap</th><th>Time</th><th>&Delta;Best</th><th>Max</th><th>Avg</th><th>Ref</th>
+          </tr></thead><tbody id="lapBody"></tbody></table>
+        </div>
+
+        <div class="tabbody hide" id="tab-ch">
+          <div class="note">表示するグラフを選択します。チャンネルを増やせばグラフ段が増えます。</div>
+          <div id="chList"></div>
+        </div>
+
+        <div class="tabbody hide" id="tab-note">
+          <div class="fld"><label>解析メモ（この端末に自動保存されます）</label>
+            <textarea id="noteGlobal" rows="7" placeholder="セッション全体の気づき"></textarea></div>
+          <div class="fld"><label id="noteLapLbl">ラップ別メモ</label>
+            <textarea id="noteLap" rows="6" placeholder="選択中ラップへのメモ"></textarea></div>
+          <div class="fld"><label>現在位置にマーカーを追加</label>
+            <div class="row"><input type="text" id="mkText" placeholder="例: 1コーナー ブレーキ遅い" style="flex:1;min-width:130px">
+            <button id="mkAdd">追加</button></div></div>
+          <div id="mkList"></div>
+          <hr class="sep">
+          <div class="actions" style="justify-content:flex-start">
+            <button id="expJson">解析結果を書き出す</button>
+            <button id="expCsv">ラップ表をCSV出力</button>
+          </div>
+        </div>
+
+        <div class="tabbody hide" id="tab-set">
+          <h4>座標系 / 符号</h4>
+          <div class="fld"><div class="row">
+            <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="invGx" style="accent-color:var(--accent)">前後Gを反転</label>
+            <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="invGy" style="accent-color:var(--accent)">横Gを反転</label>
+          </div></div>
+          <div class="fld"><div class="row">
+            <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="gzGrav" checked style="accent-color:var(--accent)">上下Gから重力1Gを差し引く</label>
+          </div></div>
+          <h4>平滑化</h4>
+          <div class="fld"><label>移動平均 <span id="smLbl" class="mono">5</span> m（コース距離方向）</label>
+            <input type="range" id="smooth" min="1" max="31" step="2" value="5" style="width:100%"></div>
+          <hr class="sep">
+          <h4>セクター</h4>
+          <div class="fld"><label>区切り距離 [m]（カンマ区切り・0とゴールは自動）</label>
+            <div class="row"><input type="text" id="secList" placeholder="300, 600" style="flex:1;min-width:120px">
+            <button id="secApply">適用</button></div>
+            <div class="note">現在位置で区切るには <b>+</b> ボタン → <button id="secAdd" style="padding:1px 7px">+ ここで区切る</button></div>
+          </div>
+          <hr class="sep">
+          <h4>ラップ判定</h4>
+          <div class="fld"><label>コントロールライン</label>
+            <div class="note" id="clInfo">—</div>
+            <button id="clHere">現在位置をコントロールラインにする</button></div>
+          <hr class="sep">
+          <h4>セッション情報</h4>
+          <div class="fld"><label>ドライバー</label><input type="text" id="mDriver" placeholder="ドライバー名"></div>
+          <div class="fld"><label>車両</label><input type="text" id="mVehicle" placeholder="車両名"></div>
+          <div class="fld"><label>タイヤ / 空気圧</label><input type="text" id="mTire"></div>
+          <div class="fld"><label>天候 / 気温</label><input type="text" id="mWeather"></div>
+          <div class="fld"><label>セットアップ</label><textarea id="mSetup" rows="3"></textarea></div>
+          <hr class="sep">
+          <div class="actions" style="justify-content:flex-start">
+            <button id="btnReload">別のデータを読み込む</button>
+            <button id="btnForget">保存データを削除</button>
+          </div>
+          <div class="note" id="dataInfo"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="right">
+      <div class="ph">
+        <span>Channels vs Track Distance</span><span class="sp"></span>
+        <button id="gZoomOut" title="ズームアウト">−</button>
+        <button id="gZoomIn" title="ズームイン">＋</button>
+        <button id="gReset" title="全体表示">Fit</button>
+        <button id="gSec" class="on" title="セクター線 (S)">Sec</button>
+        <button id="gDelta" class="on" title="Δタイムグラフ">&Delta;</button>
+      </div>
+      <div id="chartWrap"><canvas id="chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div id="drop">
+  <div class="box">
+    <h1>Circuit <span>Data Analyzer</span></h1>
+    <p>サーキット走行データ解析ツール<br>
+      <span style="color:var(--fg3);font-size:12px">データは端末内だけで処理されます。どこにも送信されません。</span></p>
+    <div id="dz">
+      <div class="big" id="dzTitle">CSV / ZIP をドロップ</div>
+      <div id="dzAdd" class="hide" style="color:var(--good);font-size:12px;margin-bottom:6px">
+        現在のデータに<b>追加</b>して比較します（同じコースのみ）</div>
+      <div style="color:var(--fg2);font-size:12.5px">またはタップしてファイルを選択</div>
+      <div style="color:var(--fg3);font-size:11.5px;margin-top:9px">
+        Qstarz BL-1000GT (RCNX→CSV一式 / ZIPのまま可) ・ 汎用GPSロガーCSV<br>
+        <code>01_WayPoints.csv</code> と <code>02_Lap.csv</code> を同時に選ぶと精度が上がります<br>
+        別日のZIPを<b>同時に</b>ドロップすると、そのまま重ね合わせて比較できます
+      </div>
+    </div>
+    <input type="file" id="file" multiple accept=".csv,.txt,.zip" style="display:none">
+    <div id="prog"></div>
+    <div id="bar"><i></i></div>
+    <div id="err" class="err hide"></div>
+    <div id="recent"></div>
+    <div style="margin-top:14px"><button id="dropClose" class="hide">← 解析画面に戻る</button></div>
+  </div>
+</div>
+
+<div id="mapModal" class="modal hide"><div class="card">
+  <h3>CSV列の割り当て</h3>
+  <p class="note">このCSVは自動判別できませんでした。各項目にCSVの列を割り当ててください。<br>
+    緯度・経度は必須です。速度が無い場合はGPSから自動計算します。</p>
+  <div class="mapgrid" id="mapGrid"></div>
+  <div class="actions">
+    <button id="mapCancel">キャンセル</button>
+    <button id="mapOk" class="on">読み込む</button>
+  </div>
+</div></div>
+
+<div id="toast"></div>
+
+<script>
+/* ===========================================================
+   Circuit Data Analyzer  -  core / parser / normalizer
+   =========================================================== */
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const R_EARTH = 6378137.0;
+const G0 = 9.80665;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const sleep = (ms = 0) => new Promise(r => setTimeout(r, ms));
+
+/* Yield to the event loop so progress can paint during a long import.
+   setTimeout is clamped hard (100s of ms) in background or non-compositing
+   tabs, which would turn a 1 s import into 10 s; a MessageChannel task is not
+   throttled that way. */
+function yieldToUI() {
+  return new Promise(res => {
+    if (typeof MessageChannel !== 'function') return setTimeout(res, 0);
+    const c = new MessageChannel();
+    c.port1.onmessage = () => { c.port1.close(); c.port2.close(); res(); };
+    c.port2.postMessage(0);
+  });
+}
+
+function fmtTime(s) {
+  if (s == null || !isFinite(s)) return '—';
+  const neg = s < 0; s = Math.abs(s);
+  const m = Math.floor(s / 60), r = s - m * 60;
+  return (neg ? '-' : '') + (m > 0 ? m + ':' + r.toFixed(3).padStart(6, '0') : r.toFixed(3));
+}
+function fmtDelta(s) {
+  if (s == null || !isFinite(s)) return '—';
+  return (s >= 0 ? '+' : '') + s.toFixed(3);
+}
+function toast(msg, ms = 2200) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms);
+}
+function progress(msg, pct) {
+  $('#prog').textContent = msg || '';
+  $('#bar i').style.width = (pct == null ? 0 : clamp(pct, 0, 100)) + '%';
+}
+function showErr(msg) {
+  const e = $('#err'); e.textContent = msg; e.classList.remove('hide'); progress('', 0);
+}
+
+/* ---------------- minimal ZIP reader (stored + deflate) ---------------- */
+async function unzip(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= 0 && i > u8.length - 66000; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('ZIPの中身を読み取れませんでした。');
+  const nEnt = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const out = [];
+  const dec = new TextDecoder('utf-8');
+  for (let i = 0; i < nEnt; i++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true);
+    const csize = dv.getUint32(p + 20, true);
+    const nLen = dv.getUint16(p + 28, true), eLen = dv.getUint16(p + 30, true), cLen = dv.getUint16(p + 32, true);
+    const lho = dv.getUint32(p + 42, true);
+    const name = dec.decode(u8.subarray(p + 46, p + 46 + nLen));
+    p += 46 + nLen + eLen + cLen;
+    if (name.endsWith('/')) continue;
+    const lnLen = dv.getUint16(lho + 26, true), leLen = dv.getUint16(lho + 28, true);
+    const start = lho + 30 + lnLen + leLen;
+    const raw = u8.subarray(start, start + csize);
+    let data;
+    if (method === 0) data = raw;
+    else if (method === 8) {
+      if (typeof DecompressionStream !== 'function') throw new Error('このブラウザはZIP解凍に対応していません。CSVを直接お選びください。');
+      const ds = new DecompressionStream('deflate-raw');
+      const ab = await new Response(new Blob([raw]).stream().pipeThrough(ds)).arrayBuffer();
+      data = new Uint8Array(ab);
+    } else continue;
+    out.push({ name: name.split('/').pop(), bytes: data });
+  }
+  return out;
+}
+
+/* ---------------- text decode (UTF-8 / BOM / Shift_JIS fallback) ------- */
+function decodeText(bytes) {
+  let b = bytes;
+  if (b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) b = b.subarray(3);
+  let s = new TextDecoder('utf-8', { fatal: false }).decode(b);
+  if (s.indexOf('\uFFFD') >= 0) {          // U+FFFD = it was not UTF-8
+    try { s = new TextDecoder('shift_jis').decode(b); } catch (e) { }
+  }
+  return s;
+}
+
+/* ---------------- CSV ---------------- */
+function splitLine(line) {
+  if (line.indexOf('"') < 0) return line.split(',');
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) {
+      if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+      else cur += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  out.push(cur); return out;
+}
+function csvLines(text) {
+  const raw = text.split(/\r\n|\n|\r/);
+  while (raw.length && raw[raw.length - 1].trim() === '') raw.pop();
+  return raw;
+}
+function parseCsvSmall(text) {
+  const L = csvLines(text);
+  if (!L.length) return { head: [], rows: [] };
+  const head = splitLine(L[0]).map(s => s.trim().replace(/^\uFEFF/, ''));
+  const rows = [];
+  for (let i = 1; i < L.length; i++) {
+    if (!L[i]) continue;
+    const c = splitLine(L[i]); const o = {};
+    for (let j = 0; j < head.length; j++) o[head[j]] = c[j] === undefined ? '' : c[j];
+    rows.push(o);
+  }
+  return { head, rows };
+}
+
+/* ---------------- channel dictionary ---------------- */
+/* aliases are matched lowercased with non-alphanumerics stripped */
+const FIELD_DEFS = [
+  { key: 'id', label: '行ID', al: ['id'] },
+  { key: 'lat', label: '緯度 Latitude', req: true, al: ['lat', 'latitude', 'gpslatitude', 'ido'] },
+  { key: 'lon', label: '経度 Longitude', req: true, al: ['lon', 'lng', 'long', 'longitude', 'gpslongitude', 'keido'] },
+  { key: 'time', label: '時刻 Time', al: ['time', 'timestamp', 'utc', 'gpstime', 'datetime', 'secs', 'seconds', 'localtime'] },
+  { key: 'ms', label: 'ミリ秒 Milliseconds', al: ['ms', 'millis', 'milliseconds', 'msec'] },
+  { key: 'speed', label: '速度 Speed', al: ['speed', 'velocity', 'gpsspeed', 'vehiclespeed', 'spd', 'sokudo'] },
+  { key: 'alt', label: '高度 Altitude', al: ['altitude', 'alt', 'height', 'elevation', 'ele'] },
+  { key: 'heading', label: '方位 Heading', al: ['heading', 'course', 'bearing', 'track', 'dir'] },
+  { key: 'gx', label: '前後G Longitudinal', al: ['gx', 'accelx', 'accx', 'axisx', 'longitudinalg', 'longg', 'longacc', 'ax'] },
+  { key: 'gy', label: '横G Lateral', al: ['gy', 'accely', 'accy', 'axisy', 'lateralg', 'latg', 'latacc', 'ay'] },
+  { key: 'gz', label: '上下G Vertical', al: ['gz', 'accelz', 'accz', 'axisz', 'verticalg', 'vertg', 'az'] },
+  { key: 'yaw', label: 'ヨーレート Yaw rate', al: ['gyroz', 'yawrate', 'yaw', 'rz', 'wz', 'gyrz'] },
+  { key: 'rpm', label: 'エンジン回転 RPM', al: ['rpm', 'enginerpm', 'engspeed'] },
+  { key: 'throttle', label: 'スロットル Throttle', al: ['throttle', 'tps', 'accelpedal'] },
+  { key: 'brake', label: 'ブレーキ Brake', al: ['brake', 'brakepressure', 'brk'] },
+  { key: 'steer', label: 'ステアリング Steering', al: ['steering', 'steer', 'steeringangle', 'sas'] },
+  { key: 'watertemp', label: '水温 Water temp', al: ['watertemp', 'coolanttemp', 'wt'] },
+  { key: 'oiltemp', label: '油温 Oil temp', al: ['oiltemp', 'ot'] },
+  { key: 'gear', label: 'ギア Gear', al: ['gear'] },
+];
+const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function autoMap(head) {
+  const used = new Set(), map = {};
+  const H = head.map(norm);
+  for (const f of FIELD_DEFS) {
+    for (const a of f.al) {
+      const i = H.indexOf(a);
+      if (i >= 0 && !used.has(i)) { map[f.key] = i; used.add(i); break; }
+    }
+  }
+  return map;
+}
+
+/* unit heuristics -------------------------------------------------- */
+/* A single outlier sample must never decide a unit, so these look at the
+   99th percentile rather than the maximum. */
+function pct99(vals, abs) {
+  const a = [];
+  for (let i = 0; i < vals.length; i += 3) {
+    const v = abs ? Math.abs(vals[i]) : vals[i];
+    if (isFinite(v)) a.push(v);
+  }
+  if (!a.length) return 0;
+  a.sort((x, y) => x - y);
+  return a[Math.min(a.length - 1, Math.floor(a.length * 0.99))];
+}
+
+/* Speed magnitude alone is ambiguous (25 m/s and 25 km/h are both plausible on a
+   short circuit), so calibrate the column against GPS-derived speed instead. */
+const SPEED_UNITS = [{ f: 1, u: 'km/h' }, { f: 3.6, u: 'm/s' }, { f: 1.609344, u: 'mph' }, { f: 1.852, u: 'kn' }];
+function speedFactor(vals, ref) {
+  const r = [];
+  if (ref) for (let i = 0; i < vals.length; i += 7) {
+    const v = vals[i], g = ref[i];
+    if (!isFinite(v) || v <= 0 || !isFinite(g) || g < 25) continue;   // only clearly-moving samples
+    r.push(g / v);
+  }
+  if (r.length < 30) {                                               // no usable GPS reference
+    const p = pct99(vals, true);
+    return p > 0 && p < 12 ? 3.6 : 1;
+  }
+  r.sort((a, b) => a - b);
+  const med = r[r.length >> 1];
+  let best = SPEED_UNITS[0];
+  for (const c of SPEED_UNITS) if (Math.abs(Math.log(c.f / med)) < Math.abs(Math.log(best.f / med))) best = c;
+  return best.f;
+}
+function accelFactor(vals) {          // -> G
+  return pct99(vals, true) > 6 ? 1 / G0 : 1;                         // > 6 means m/s^2
+}
+function gyroFactor(vals) {           // -> deg/s
+  const p = pct99(vals, true);
+  return p > 0 && p < 8 ? 180 / Math.PI : 1;                         // < 8 means rad/s
+}
+
+/* parse a HH:MM:SS(.mmm) / ISO / epoch time cell into seconds --------- */
+function parseTimeCell(s) {
+  if (s === '' || s == null) return NaN;
+  const n = +s;
+  if (isFinite(n) && String(s).indexOf(':') < 0 && String(s).indexOf('-') < 0) return n;
+  const iso = Date.parse(s);
+  if (isFinite(iso)) return iso / 1000;
+  const m = String(s).match(/(\d{1,2}):(\d{2}):(\d{2}(?:\.\d+)?)/);
+  if (m) return (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]);
+  return NaN;
+}
+
+/* ============================================================
+   Build normalized session from a big point CSV
+   ============================================================ */
+async function buildPoints(text, map, onProg) {
+  const L = csvLines(text);
+  const nRows = L.length - 1;
+  if (nRows < 20) throw new Error('データ行が足りません（20行以上必要）。');
+
+  const cols = {};
+  for (const k in map) if (map[k] >= 0) cols[k] = map[k];
+  if (cols.lat === undefined || cols.lon === undefined) throw new Error('NOLATLON');
+
+  const keys = Object.keys(cols);
+  const arr = {};
+  for (const k of keys) arr[k] = new Float64Array(nRows);
+
+  /* Sniff the timestamp format once instead of re-testing it on every one of
+     hundreds of thousands of rows. */
+  let timeConv = parseTimeCell;
+  if (cols.time !== undefined) {
+    let sample = '';
+    for (let i = 1; i <= nRows && !sample; i++) if (L[i]) sample = (splitLine(L[i])[cols.time] || '').trim();
+    if (/^-?\d+(\.\d+)?$/.test(sample)) timeConv = s => { const v = +s; return v === v ? v : parseTimeCell(s); };
+  }
+
+  /* Hot loop: flatten the column map into parallel indexed arrays so the inner
+     loop does no object-property lookups and allocates no iterators per row. */
+  const nk = keys.length;
+  const colIdx = new Int32Array(nk);
+  const dest = new Array(nk);
+  let timeK = -1;
+  for (let j = 0; j < nk; j++) {
+    colIdx[j] = cols[keys[j]];
+    dest[j] = arr[keys[j]];
+    if (keys[j] === 'time') timeK = j;
+  }
+  const latC = cols.lat, lonC = cols.lon;
+
+  const CH = 20000;
+  let n = 0;
+  for (let i = 1; i <= nRows; i++) {
+    const line = L[i];
+    if (!line) continue;
+    const c = splitLine(line);
+    const la = +c[latC], lo = +c[lonC];
+    if (!isFinite(la) || !isFinite(lo) || (la === 0 && lo === 0) || Math.abs(la) > 90) continue;
+    for (let j = 0; j < nk; j++) {
+      const raw = c[colIdx[j]];
+      dest[j][n] = j === timeK ? timeConv(raw)
+        : (raw === '' || raw === undefined ? NaN : +raw);
+    }
+    n++;
+    if (i % CH === 0) { onProg && onProg(i / nRows); await yieldToUI(); }
+  }
+  if (n < 20) throw new Error('有効なGPS点が見つかりませんでした。緯度・経度の列を確認してください。');
+  for (const k of keys) arr[k] = arr[k].subarray(0, n);
+
+  /* ---- time base ---- */
+  let t = new Float64Array(n);
+  if (arr.time) {
+    const ms = arr.ms;
+    for (let i = 0; i < n; i++) t[i] = arr.time[i] + (ms ? (isFinite(ms[i]) ? ms[i] / 1000 : 0) : 0);
+    // detect midnight rollover for HH:MM:SS sources
+    for (let i = 1; i < n; i++) if (t[i] < t[i - 1] - 3600) for (let j = i; j < n; j++) t[j] += 86400;
+    let bad = 0; for (let i = 1; i < n; i++) if (!(t[i] > t[i - 1])) bad++;
+    if (bad > n * 0.3) t = null;
+  } else t = null;
+  if (!t) { t = new Float64Array(n); for (let i = 0; i < n; i++) t[i] = i * 0.1; }
+
+  /* ---- local metric frame ---- */
+  let lat0 = 0, lon0 = 0;
+  for (let i = 0; i < n; i++) { lat0 += arr.lat[i]; lon0 += arr.lon[i]; }
+  lat0 /= n; lon0 /= n;
+  const kx = Math.cos(lat0 * Math.PI / 180) * R_EARTH * Math.PI / 180, ky = R_EARTH * Math.PI / 180;
+  const X = new Float64Array(n), Y = new Float64Array(n);
+  for (let i = 0; i < n; i++) { X[i] = (arr.lon[i] - lon0) * kx; Y[i] = (arr.lat[i] - lat0) * ky; }
+
+  /* ---- speed (GPS-derived first: it is unit-unambiguous and calibrates the column) ---- */
+  const gpsSpeed = new Float32Array(n);
+  for (let i = 1; i < n - 1; i++) {
+    const dt = t[i + 1] - t[i - 1];
+    gpsSpeed[i] = dt > 0 ? Math.hypot(X[i + 1] - X[i - 1], Y[i + 1] - Y[i - 1]) / dt * 3.6 : 0;
+  }
+  if (n > 2) { gpsSpeed[0] = gpsSpeed[1]; gpsSpeed[n - 1] = gpsSpeed[n - 2]; }
+
+  let speed, speedUnit = 'GPS';
+  if (arr.speed) {
+    const f = speedFactor(arr.speed, gpsSpeed);
+    speedUnit = (SPEED_UNITS.find(c => c.f === f) || {}).u || 'km/h';
+    speed = new Float32Array(n);
+    for (let i = 0; i < n; i++) speed[i] = arr.speed[i] * f;
+  } else speed = gpsSpeed;
+
+  /* ---- heading (measured or derived) ---- */
+  const heading = new Float32Array(n);
+  if (arr.heading) for (let i = 0; i < n; i++) heading[i] = arr.heading[i];
+  else {
+    for (let i = 1; i < n; i++) {
+      const dx = X[i] - X[i - 1], dy = Y[i] - Y[i - 1];
+      heading[i] = (dx || dy) ? (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360 : heading[i - 1];
+    }
+    heading[0] = heading[1];
+  }
+
+  /* ---- accelerations ---- */
+  const ch = {}, units = {};
+  const put = (k, a, u) => { ch[k] = a; units[k] = u; };
+  put('speed', speed, 'km/h');
+  put('heading', heading, 'deg');
+  for (const [k, u] of [['gx', 'G'], ['gy', 'G'], ['gz', 'G']]) {
+    if (!arr[k]) continue;
+    const f = accelFactor(arr[k]); const a = new Float32Array(n);
+    for (let i = 0; i < n; i++) a[i] = arr[k][i] * f;
+    put(k, a, u);
+  }
+  if (arr.alt) { const a = new Float32Array(n); for (let i = 0; i < n; i++) a[i] = arr.alt[i]; put('alt', a, 'm'); }
+
+  /* ---- yaw rate: sensor if present, otherwise derived from heading ---- */
+  let yawDerived = false;
+  if (arr.yaw) {
+    const f = gyroFactor(arr.yaw); const a = new Float32Array(n);
+    for (let i = 0; i < n; i++) a[i] = arr.yaw[i] * f;
+    put('yaw', a, 'deg/s');
+  } else {
+    /* GPS course is meaningless when the car is barely moving, and differentiating
+       it there produces huge fake yaw spikes - gate on speed and clamp to a rate a
+       car can physically reach. */
+    const a = new Float32Array(n);
+    for (let i = 1; i < n - 1; i++) {
+      const dt = t[i + 1] - t[i - 1];
+      if (dt <= 0 || speed[i] < 8) { a[i] = 0; continue; }
+      let dh = heading[i + 1] - heading[i - 1];
+      dh = ((dh + 540) % 360) - 180;
+      a[i] = clamp(dh / dt, -200, 200);
+    }
+    if (n > 2) { a[0] = a[1]; a[n - 1] = a[n - 2]; }
+    put('yaw', a, 'deg/s'); yawDerived = true;
+  }
+
+  /* ---- optional extra channels ---- */
+  for (const [k, u] of [['rpm', 'rpm'], ['throttle', '%'], ['brake', ''], ['steer', 'deg'],
+  ['watertemp', '°C'], ['oiltemp', '°C'], ['gear', '']]) {
+    if (!arr[k]) continue;
+    const a = new Float32Array(n); for (let i = 0; i < n; i++) a[i] = arr[k][i];
+    put(k, a, u);
+  }
+
+  /* ---- combined G ---- */
+  if (ch.gx && ch.gy) {
+    const a = new Float32Array(n);
+    for (let i = 0; i < n; i++) a[i] = Math.hypot(ch.gx[i], ch.gy[i]);
+    put('gcomb', a, 'G');
+  }
+
+  /* ---- original row ids (used to map logger lap tables back to points) ---- */
+  let ids = null;
+  if (arr.id) { ids = new Int32Array(n); for (let i = 0; i < n; i++) ids[i] = arr.id[i]; }
+
+  const hz = n > 2 ? 1 / Math.max(1e-6, (t[n - 1] - t[0]) / (n - 1)) : 10;
+  return { n, t, lat: arr.lat, lon: arr.lon, X, Y, lat0, lon0, kx, ky, ch, units, hz, yawDerived, id: ids, speedUnit };
+}
+
+/* ===========================================================
+   Track engine : centerline / projection / laps / resampling
+   =========================================================== */
+
+/* --- build a 1 m-spaced, smoothed, closed centerline from one lap --- */
+function buildCenterline(P, i0, i1, step = 1) {
+  const xs = [], ys = [];
+  for (let i = i0; i <= i1; i++) { xs.push(P.X[i]); ys.push(P.Y[i]); }
+  // close the loop
+  xs.push(xs[0]); ys.push(ys[0]);
+  const m = xs.length;
+  const s = new Float64Array(m);
+  for (let i = 1; i < m; i++) s[i] = s[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
+  const total = s[m - 1];
+  if (!(total > 100)) throw new Error('コース形状を生成できませんでした。');
+  const M = Math.max(50, Math.round(total / step));
+  const cx = new Float64Array(M), cy = new Float64Array(M);
+  let j = 0;
+  for (let k = 0; k < M; k++) {
+    const target = total * k / M;
+    while (j < m - 2 && s[j + 1] < target) j++;
+    const seg = s[j + 1] - s[j];
+    const f = seg > 0 ? (target - s[j]) / seg : 0;
+    cx[k] = xs[j] + (xs[j + 1] - xs[j]) * f;
+    cy[k] = ys[j] + (ys[j + 1] - ys[j]) * f;
+  }
+  // circular moving-average smoothing (GPS noise)
+  const w = 4, sx = new Float64Array(M), sy = new Float64Array(M);
+  for (let k = 0; k < M; k++) {
+    let ax = 0, ay = 0;
+    for (let q = -w; q <= w; q++) { const p = (k + q + M) % M; ax += cx[p]; ay += cy[p]; }
+    sx[k] = ax / (2 * w + 1); sy[k] = ay / (2 * w + 1);
+  }
+  // arc length of the smoothed line
+  const d = new Float64Array(M + 1);
+  for (let k = 0; k < M; k++) {
+    const p = (k + 1) % M;
+    d[k + 1] = d[k] + Math.hypot(sx[p] - sx[k], sy[p] - sy[k]);
+  }
+  const len = d[M];
+  // spatial hash for global nearest-segment search
+  const cell = 25, grid = new Map();
+  for (let k = 0; k < M; k++) {
+    const gx = Math.floor(sx[k] / cell), gy = Math.floor(sy[k] / cell);
+    const key = gx + ',' + gy;
+    let a = grid.get(key); if (!a) grid.set(key, a = []); a.push(k);
+  }
+  return { M, x: sx, y: sy, d, len, cell, grid };
+}
+
+/* --- project one xy onto the centerline; hint = previous segment ----
+   This runs once per logged point (hundreds of thousands of times), so the
+   segment scan is written as a flat loop over a reusable candidate buffer:
+   no closures and no allocation per call. */
+let _cand = new Int32Array(1024);
+let _bD2 = 0, _bK = 0, _bF = 0;
+function _scan(C, x, y, nc) {
+  const M = C.M, CX = C.x, CY = C.y;
+  for (let q = 0; q < nc; q++) {
+    const k = _cand[q], p = k + 1 === M ? 0 : k + 1;
+    const ax = CX[k], ay = CY[k];
+    const ex = CX[p] - ax, ey = CY[p] - ay;
+    const L2 = ex * ex + ey * ey; if (L2 <= 0) continue;
+    let f = ((x - ax) * ex + (y - ay) * ey) / L2;
+    f = f < 0 ? 0 : f > 1 ? 1 : f;
+    const dx = x - (ax + ex * f), dy = y - (ay + ey * f);
+    const d2 = dx * dx + dy * dy;
+    if (d2 < _bD2) { _bD2 = d2; _bK = k; _bF = f; }
+  }
+}
+function projectXY(C, x, y, hint) {
+  const M = C.M;
+  _bD2 = Infinity; _bK = 0; _bF = 0;
+  /* The centerline is sampled every ~1 m and a lap point advances only a few
+     metres per sample, so a narrow window around the previous match is enough.
+     Anything it cannot explain (pit lane, stops, data gaps) falls through to the
+     spatial-hash search below. */
+  if (hint >= 0) {
+    const W = 20; let nc = 0;
+    for (let q = -W; q <= W; q++) { let k = hint + q; if (k < 0) k += M; else if (k >= M) k -= M; _cand[nc++] = k; }
+    _scan(C, x, y, nc);
+  }
+  if (_bD2 > 900 || hint < 0) {             // > 30 m off : global search
+    const gx = Math.floor(x / C.cell), gy = Math.floor(y / C.cell);
+    let nc = 0;
+    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
+      const arr = C.grid.get((gx + a) + ',' + (gy + b));
+      if (!arr) continue;
+      for (let z = 0; z < arr.length; z++) {
+        if (nc + 2 > _cand.length) { const g = new Int32Array(_cand.length * 2); g.set(_cand); _cand = g; }
+        const k = arr[z];
+        _cand[nc++] = k;
+        _cand[nc++] = k === 0 ? M - 1 : k - 1;
+      }
+    }
+    _scan(C, x, y, nc);
+  }
+  const bestD2 = _bD2, bestK = _bK, bestF = _bF;
+  const p = (bestK + 1) % M;
+  const ex = C.x[p] - C.x[bestK], ey = C.y[p] - C.y[bestK];
+  const el = Math.hypot(ex, ey) || 1;
+  const px = C.x[bestK] + ex * bestF, py = C.y[bestK] + ey * bestF;
+  const off = ((x - px) * (ey / el) - (y - py) * (ex / el));   // + = right of travel
+  return { d: C.d[bestK] + el * bestF, off, k: bestK, dist: Math.sqrt(bestD2) };
+}
+
+async function projectAll(P, C, onProg) {
+  const n = P.n;
+  const D = new Float32Array(n), OFF = new Float32Array(n), OK = new Uint8Array(n);
+  let hint = -1;
+  for (let i = 0; i < n; i++) {
+    const r = projectXY(C, P.X[i], P.Y[i], hint);
+    D[i] = r.d; OFF[i] = r.off; OK[i] = r.dist < 60 ? 1 : 0;
+    hint = r.k;
+    if ((i & 32767) === 0) { onProg && onProg(i / n); await yieldToUI(); }
+  }
+  return { d: D, off: OFF, ok: OK };
+}
+
+/* ---------------- control line & lap detection ---------------- */
+function makeControlLine(P, lat, lon, headingDeg, width) {
+  const x0 = (lon - P.lon0) * P.kx, y0 = (lat - P.lat0) * P.ky;
+  const h = headingDeg * Math.PI / 180;
+  return { x0, y0, fx: Math.sin(h), fy: Math.cos(h), w: width || 40, lat, lon, heading: headingDeg };
+}
+
+function detectLaps(P, CL) {
+  const { X, Y, t } = P, sp = P.ch.speed;
+  const n = P.n, cross = [];
+  const px = CL.fy, py = -CL.fx;             // line direction (perpendicular to travel)
+  let uPrev = (X[0] - CL.x0) * CL.fx + (Y[0] - CL.y0) * CL.fy;
+  let lastT = -1e9;
+  for (let i = 1; i < n; i++) {
+    const dx = X[i] - CL.x0, dy = Y[i] - CL.y0;
+    const u = dx * CL.fx + dy * CL.fy;
+    if (uPrev < 0 && u >= 0) {
+      const v = dx * px + dy * py;
+      // must cross inside the line width, moving, and travelling roughly with the line's direction
+      const vx = X[i] - X[i - 1], vy = Y[i] - Y[i - 1], vl = Math.hypot(vx, vy);
+      const along = vl > 0 ? (vx * CL.fx + vy * CL.fy) / vl : 0;
+      if (Math.abs(v) <= CL.w / 2 && sp[i] > 5 && along > 0.5) {
+        const f = (u - uPrev) !== 0 ? (-uPrev) / (u - uPrev) : 0;
+        const tc = t[i - 1] + (t[i] - t[i - 1]) * f;
+        if (tc - lastT > 8) { cross.push({ t: tc, i }); lastT = tc; }
+      }
+    }
+    uPrev = u;
+  }
+  /* drop spurious extra crossings (track crossovers, GPS jitter on the line):
+     anything that would produce a lap far shorter than the typical one */
+  if (cross.length > 6) {
+    const gaps = [];
+    for (let k = 0; k < cross.length - 1; k++) gaps.push(cross[k + 1].t - cross[k].t);
+    const med = gaps.slice().sort((a, b) => a - b)[gaps.length >> 1];
+    const keep = [cross[0]];
+    for (let k = 1; k < cross.length; k++) {
+      if (cross[k].t - keep[keep.length - 1].t < med * 0.6 && k < cross.length - 1) continue;
+      keep.push(cross[k]);
+    }
+    cross.length = 0; cross.push(...keep);
+  }
+  const laps = [];
+  for (let k = 0; k < cross.length - 1; k++) {
+    const a = cross[k], b = cross[k + 1];
+    laps.push({ num: k + 1, tStart: a.t, tEnd: b.t, time: b.t - a.t, i0: a.i - 1, i1: b.i });
+  }
+  return laps;
+}
+
+/* auto-guess a control line when the logger gives none */
+function guessControlLine(P) {
+  const cell = 12, m = new Map(), sp = P.ch.speed;
+  for (let i = 0; i < P.n; i++) {
+    if (sp[i] < 20) continue;
+    const key = Math.floor(P.X[i] / cell) + ',' + Math.floor(P.Y[i] / cell);
+    let o = m.get(key); if (!o) m.set(key, o = { c: 0, i: i, s: 0 });
+    o.c++; o.s += sp[i];
+  }
+  let best = null;
+  for (const o of m.values()) { const sc = o.c * (o.s / o.c); if (!best || sc > best.sc) best = { ...o, sc }; }
+  if (!best) return null;
+  const i = best.i;
+  return makeControlLine(P, P.lat[i], P.lon[i], P.ch.heading[i], 40);
+}
+
+/* ---------------- per-lap stats from raw samples ---------------- */
+function lapStats(P, lap) {
+  const sp = P.ch.speed, gy = P.ch.gy, gx = P.ch.gx;
+  let mx = -1e9, mn = 1e9, sum = 0, c = 0, mlat = 0, mbrk = 0;
+  for (let i = Math.max(0, lap.i0); i <= Math.min(P.n - 1, lap.i1); i++) {
+    const v = sp[i]; if (!isFinite(v)) continue;
+    if (v > mx) mx = v; if (v < mn) mn = v; sum += v; c++;
+    if (gy) { const a = Math.abs(gy[i]); if (a > mlat) mlat = a; }
+    if (gx) { if (gx[i] < mbrk) mbrk = gx[i]; }
+  }
+  return { maxSpd: c ? mx : NaN, minSpd: c ? mn : NaN, avgSpd: c ? sum / c : NaN, maxLat: mlat, maxBrake: mbrk };
+}
+
+/* ---------------- resample a lap onto the track-distance grid ------- */
+function resampleLap(P, C, PR, lap, chKeys, step, smoothM) {
+  const L = C.len, M = Math.max(20, Math.round(L / step));
+  const i0 = Math.max(0, lap.i0 - 2), i1 = Math.min(P.n - 1, lap.i1 + 2);
+  const cnt = i1 - i0 + 1;
+
+  // unwrapped distance relative to the lap start crossing
+  const dStart = interpAtTime(P, PR, lap.tStart, L);
+  const rel = new Float64Array(cnt), tt = new Float64Array(cnt);
+  let prev = 0;
+  for (let q = 0; q < cnt; q++) {
+    const i = i0 + q;
+    let r0 = PR.d[i] - dStart;
+    r0 = ((r0 % L) + L) % L;                       // wrapped into [0, L)
+    let r;
+    if (q === 0) r = r0 > L * 0.5 ? r0 - L : r0;   // the first samples sit just *before* the line
+    else {
+      r = r0 + Math.round((prev - r0) / L) * L;    // lift to the branch nearest the previous sample
+      if (r < prev) r = prev;                      // keep it monotonic through GPS jitter
+    }
+    prev = r; rel[q] = r; tt[q] = P.t[i] - lap.tStart;
+  }
+
+  const out = {
+    M, step, L, tEnd: lap.time, num: lap.num,
+    t: new Float32Array(M), lat: new Float32Array(M), lon: new Float32Array(M), off: new Float32Array(M)
+  };
+  for (const k of chKeys) out[k] = new Float32Array(M);
+
+  let p = 0;
+  for (let g = 0; g < M; g++) {
+    const target = g * step;
+    while (p < cnt - 2 && rel[p + 1] < target) p++;
+    const span = rel[p + 1] - rel[p];
+    const f = span > 1e-9 ? clamp((target - rel[p]) / span, 0, 1) : 0;
+    const a = i0 + p, b = i0 + p + 1;
+    out.t[g] = tt[p] + (tt[p + 1] - tt[p]) * f;
+    out.lat[g] = P.lat[a] + (P.lat[b] - P.lat[a]) * f;
+    out.lon[g] = P.lon[a] + (P.lon[b] - P.lon[a]) * f;
+    out.off[g] = PR.off[a] + (PR.off[b] - PR.off[a]) * f;
+    for (const k of chKeys) {
+      const A = P.ch[k]; if (!A) continue;
+      if (k === 'heading') {
+        let dh = A[b] - A[a]; dh = ((dh + 540) % 360) - 180;
+        out[k][g] = (A[a] + dh * f + 360) % 360;
+      } else out[k][g] = A[a] + (A[b] - A[a]) * f;
+    }
+  }
+  // make elapsed time strictly increasing
+  for (let g = 1; g < M; g++) if (!(out.t[g] > out.t[g - 1])) out.t[g] = out.t[g - 1] + 1e-4;
+
+  if (smoothM > 1) {
+    const w = Math.floor(smoothM / 2);
+    for (const k of chKeys) {
+      if (k === 'heading') continue;
+      out[k] = circSmooth(out[k], w);
+    }
+  }
+  return out;
+}
+
+function circSmooth(a, w) {
+  const M = a.length, o = new Float32Array(M), n = 2 * w + 1;
+  let s = 0;
+  for (let q = -w; q <= w; q++) s += a[(q + M) % M];
+  for (let i = 0; i < M; i++) { o[i] = s / n; s -= a[(i - w + M) % M]; s += a[(i + w + 1) % M]; }
+  return o;
+}
+
+/* Track distance at an arbitrary instant. The value is circular: a lap start
+   usually falls between a sample just BEFORE the finish line (d ~ L) and one
+   just after (d ~ 0). Interpolating those directly walks backwards around the
+   whole lap, which silently rotates that lap's distance axis, so interpolate
+   along the short way round and wrap the result. */
+function interpAtTime(P, PR, tq, L) {
+  let lo = 0, hi = P.n - 1;
+  while (lo < hi - 1) { const m = (lo + hi) >> 1; if (P.t[m] <= tq) lo = m; else hi = m; }
+  const span = P.t[hi] - P.t[lo];
+  const f = span > 0 ? clamp((tq - P.t[lo]) / span, 0, 1) : 0;
+  const a = PR.d[lo];
+  let d = PR.d[hi] - a;
+  if (L > 0) d -= L * Math.round(d / L);
+  const v = a + d * f;
+  return L > 0 ? ((v % L) + L) % L : v;
+}
+
+/* sample a resampled lap at an arbitrary distance.
+   Channels wrap around the lap; elapsed time does not - it is clamped to
+   [0, lapTime] so that sector splits taken at the finish line stay exact. */
+function sampleAt(rl, dist, key) {
+  const A = rl[key]; if (!A) return NaN;
+  const M = rl.M, step = rl.step;
+  if (key === 't') {
+    const g = clamp(dist, 0, rl.L) / step;
+    const last = M - 1;
+    if (g >= last) {                                  // tail segment: last node -> finish line
+      const w = rl.L / step - last;
+      return w > 1e-9 ? A[last] + (rl.tEnd - A[last]) * clamp((g - last) / w, 0, 1) : rl.tEnd;
+    }
+    const i = Math.floor(g);
+    return A[i] + (A[i + 1] - A[i]) * (g - i);
+  }
+  const g = dist / step, i = Math.floor(g), f = g - i;
+  const a = ((i % M) + M) % M, b = (a + 1) % M;
+  return A[a] + (A[b] - A[a]) * f;
+}
+
+/* ===========================================================
+   Rendering : chart lanes + track map
+   =========================================================== */
+const LAP_COLORS = ['#38bdf8', '#f87171', '#4ade80', '#fbbf24', '#c084fc', '#f472b6', '#2dd4bf', '#a3e635'];
+const CHMETA = {
+  speed: { label: 'SPEED', unit: 'km/h', zero: true, dec: 0 },
+  gx: { label: 'LONG G  (加速 +)', unit: 'G', sym: true, dec: 2 },
+  gy: { label: 'LAT G  (左 +)', unit: 'G', sym: true, dec: 2 },
+  gz: { label: 'VERT G', unit: 'G', dec: 2 },
+  yaw: { label: 'YAW RATE', unit: 'deg/s', sym: true, dec: 1 },
+  gcomb: { label: 'COMBINED G', unit: 'G', zero: true, dec: 2 },
+  alt: { label: 'ALTITUDE', unit: 'm', dec: 1 },
+  heading: { label: 'HEADING', unit: 'deg', dec: 0 },
+  off: { label: 'LINE OFFSET (右 +)', unit: 'm', sym: true, dec: 1 },
+  rpm: { label: 'RPM', unit: 'rpm', zero: true, dec: 0 },
+  throttle: { label: 'THROTTLE', unit: '%', zero: true, dec: 0 },
+  brake: { label: 'BRAKE', unit: '', zero: true, dec: 1 },
+  steer: { label: 'STEERING', unit: 'deg', sym: true, dec: 0 },
+  watertemp: { label: 'WATER TEMP', unit: '°C', dec: 1 },
+  oiltemp: { label: 'OIL TEMP', unit: '°C', dec: 1 },
+  gear: { label: 'GEAR', unit: '', zero: true, dec: 0 },
+};
+
+function niceStep(range, target) {
+  const raw = range / Math.max(1, target);
+  const p = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  const n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+}
+function dpiSetup(cv) {
+  const r = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * r) || cv.height !== Math.round(h * r)) {
+    cv.width = Math.round(w * r); cv.height = Math.round(h * r);
+  }
+  const g = cv.getContext('2d');
+  g.setTransform(r, 0, 0, r, 0, 0);
+  return { g, w, h };
+}
+
+/* ------------------------------------------------------------------ */
+/*  CHART                                                              */
+/* ------------------------------------------------------------------ */
+function drawChart() {
+  const cv = $('#chart'); if (!cv.clientWidth) return;
+  const { g, w, h } = dpiSetup(cv);
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = '#0d1014'; g.fillRect(0, 0, w, h);
+  if (!A.C) return;
+
+  const lanesOn = A.channels.filter(c => c.on);
+  const showDelta = A.showDelta && A.sel.length > 1;
+  const nLane = lanesOn.length + (showDelta ? 1 : 0);
+  if (!nLane) { g.fillStyle = '#6c7a8c'; g.font = '13px sans-serif'; g.fillText('Channelsタブでグラフを選択してください', 16, 30); return; }
+
+  const PADL = 46, PADR = 8, AXH = 20, TOP = 2;
+  const plotW = Math.max(10, w - PADL - PADR);
+  const laneH = Math.max(28, (h - AXH - TOP) / nLane);
+  const d0 = A.view.d0, d1 = A.view.d1, dspan = Math.max(1, d1 - d0);
+  const X = d => PADL + (d - d0) / dspan * plotW;
+
+  const pairs = A.sel.map(k => ({ key: k, lap: A.lapByKey(k), rl: A.getLap(k), sess: A.sessOf(k) }))
+    .filter(p => p.lap && p.rl);
+  const refRl = A.refLap != null ? A.getLap(A.refLap) : null;
+
+  /* --- sector / marker verticals --- */
+  const verticals = [];
+  if (A.showSec) for (const s of A.sectors) verticals.push({ d: s, c: '#3a4655', dash: [4, 4] });
+  for (const mk of A.markers) verticals.push({ d: mk.d, c: '#fbbf24', dash: [], lbl: mk.text });
+  verticals.push({ d: 0, c: '#e8edf4', dash: [], lbl: 'S/F' });
+  if (A.C) verticals.push({ d: A.C.len, c: '#e8edf4', dash: [], lbl: '' });
+
+  let y = TOP;
+  const laneRects = [];
+  for (let li = 0; li < nLane; li++) {
+    const isDelta = showDelta && li === nLane - 1;
+    const ch = isDelta ? null : lanesOn[li];
+    const meta = isDelta ? { label: 'Δ TIME  vs ' + lapLabel(A.refLap), unit: 's', sym: true, dec: 3 } : CHMETA[ch.key] || { label: ch.key, unit: '', dec: 2 };
+    const y0 = y, y1 = y + laneH - 1;
+    laneRects.push({ y0, y1, key: isDelta ? '__delta' : ch.key, meta });
+
+    // background
+    g.fillStyle = li % 2 ? '#101419' : '#0d1014';
+    g.fillRect(PADL, y0, plotW, laneH - 1);
+
+    /* --- gather series --- */
+    const series = [];
+    if (isDelta) {
+      if (refRl) for (let k = 0; k < pairs.length; k++) {
+        if (pairs[k].key === A.refLap) continue;
+        series.push({ rl: pairs[k].rl, color: LAP_COLORS[k % LAP_COLORS.length], delta: true });
+      }
+    } else {
+      for (let k = 0; k < pairs.length; k++) {
+        if (!pairs[k].rl[ch.key]) continue;      // this session has no such channel
+        series.push({ rl: pairs[k].rl, color: LAP_COLORS[k % LAP_COLORS.length], key: ch.key });
+      }
+    }
+
+    /* --- y range over the visible window --- */
+    let mn = Infinity, mx = -Infinity;
+    for (const s of series) {
+      const rl = s.rl, M = rl.M;
+      const gi0 = Math.max(0, Math.floor(d0 / rl.step)), gi1 = Math.min(M - 1, Math.ceil(d1 / rl.step));
+      for (let i = gi0; i <= gi1; i++) {
+        const v = s.delta ? (rl.t[i] - refRl.t[i]) : rl[s.key][i];
+        if (!isFinite(v)) continue;
+        if (v < mn) mn = v; if (v > mx) mx = v;
+      }
+    }
+    if (!isFinite(mn)) { mn = 0; mx = 1; }
+    if (meta.zero) mn = Math.min(0, mn);
+    if (meta.sym) { const a = Math.max(Math.abs(mn), Math.abs(mx)) || 1; mn = -a; mx = a; }
+    let pad = (mx - mn) * 0.08 || 0.5; mn -= pad; mx += pad;
+    const Yv = v => y1 - (v - mn) / (mx - mn) * (y1 - y0);
+
+    // grid + labels
+    const stp = niceStep(mx - mn, laneH < 60 ? 2 : 4);
+    g.strokeStyle = '#1c232c'; g.lineWidth = 1;
+    g.fillStyle = '#5c6a7c'; g.font = '9.5px ui-monospace,monospace'; g.textAlign = 'right';
+    for (let v = Math.ceil(mn / stp) * stp; v <= mx; v += stp) {
+      const yy = Math.round(Yv(v)) + .5;
+      if (yy < y0 + 8 || yy > y1 - 2) continue;
+      g.beginPath(); g.moveTo(PADL, yy); g.lineTo(PADL + plotW, yy); g.stroke();
+      g.fillText(Math.abs(v) < 1e-9 ? '0' : v.toFixed(meta.dec), PADL - 4, yy + 3);
+    }
+    // zero line
+    if (mn < 0 && mx > 0) {
+      g.strokeStyle = '#33404f'; g.beginPath();
+      const zy = Math.round(Yv(0)) + .5; g.moveTo(PADL, zy); g.lineTo(PADL + plotW, zy); g.stroke();
+    }
+    // verticals
+    for (const v of verticals) {
+      const xx = Math.round(X(v.d)) + .5;
+      if (xx < PADL || xx > PADL + plotW) continue;
+      g.save(); g.strokeStyle = v.c; g.globalAlpha = .55; g.setLineDash(v.dash);
+      g.beginPath(); g.moveTo(xx, y0); g.lineTo(xx, y1); g.stroke(); g.restore();
+    }
+
+    /* --- series --- */
+    g.save(); g.beginPath(); g.rect(PADL, y0, plotW, laneH - 1); g.clip();
+    for (const s of series) {
+      const rl = s.rl, M = rl.M;
+      const gi0 = Math.max(0, Math.floor(d0 / rl.step) - 1), gi1 = Math.min(M - 1, Math.ceil(d1 / rl.step) + 1);
+      const stepPx = (gi1 - gi0) / plotW;
+      const skip = Math.max(1, Math.floor(stepPx / 2));
+      g.strokeStyle = s.color; g.lineWidth = 1.4; g.lineJoin = 'round'; g.beginPath();
+      let started = false;
+      for (let i = gi0; i <= gi1; i += skip) {
+        const v = s.delta ? (rl.t[i] - refRl.t[i]) : rl[s.key][i];
+        if (!isFinite(v)) { started = false; continue; }
+        const xx = X(i * rl.step), yy = Yv(v);
+        if (!started) { g.moveTo(xx, yy); started = true; } else g.lineTo(xx, yy);
+      }
+      g.stroke();
+    }
+    g.restore();
+
+    // lane label
+    g.textAlign = 'left';
+    g.fillStyle = '#9aa8ba'; g.font = '700 10px sans-serif';
+    g.fillText(meta.label, PADL + 5, y0 + 12);
+    g.fillStyle = '#5c6a7c'; g.font = '9.5px ui-monospace,monospace';
+    g.fillText(meta.unit, PADL + 8 + g.measureText(meta.label).width * 1.02, y0 + 12);
+
+    // top border
+    g.strokeStyle = '#232c37'; g.beginPath(); g.moveTo(PADL, y0 + .5); g.lineTo(PADL + plotW, y0 + .5); g.stroke();
+    y += laneH;
+  }
+  A._laneRects = laneRects; A._plot = { PADL, plotW, X, d0, d1, dspan };
+
+  /* --- x axis --- */
+  const ay = h - AXH;
+  g.fillStyle = '#141920'; g.fillRect(0, ay, w, AXH);
+  g.strokeStyle = '#28313d'; g.beginPath(); g.moveTo(0, ay + .5); g.lineTo(w, ay + .5); g.stroke();
+  const xs = niceStep(dspan, Math.max(2, Math.floor(plotW / 90)));
+  g.fillStyle = '#6c7a8c'; g.font = '10px ui-monospace,monospace'; g.textAlign = 'center';
+  for (let v = Math.ceil(d0 / xs) * xs; v <= d1; v += xs) {
+    const xx = Math.round(X(v)) + .5;
+    g.strokeStyle = '#28313d'; g.beginPath(); g.moveTo(xx, ay); g.lineTo(xx, ay + 4); g.stroke();
+    g.fillText(Math.round(v) + 'm', xx, ay + 14);
+  }
+  // sector labels
+  if (A.showSec && A.sectors.length) {
+    const bounds = [0, ...A.sectors, A.C.len];
+    g.font = '700 9px sans-serif';
+    for (let i = 0; i < bounds.length - 1; i++) {
+      const mid = (bounds[i] + bounds[i + 1]) / 2;
+      if (mid < d0 || mid > d1) continue;
+      g.fillStyle = '#4a5867'; g.fillText('S' + (i + 1), X(mid), ay - 2);
+    }
+  }
+
+  /* --- cursor --- */
+  const cx = X(A.cursor);
+  if (cx >= PADL - 1 && cx <= PADL + plotW + 1) {
+    g.strokeStyle = '#ffffff'; g.globalAlpha = .85; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(Math.round(cx) + .5, TOP); g.lineTo(Math.round(cx) + .5, ay); g.stroke();
+    g.globalAlpha = 1;
+    // value chips
+    g.font = '700 10px ui-monospace,monospace';
+    for (const lr of laneRects) {
+      let yy = lr.y0 + 24;
+      for (let k = 0; k < pairs.length; k++) {
+        const rl = pairs[k].rl;
+        let v;
+        if (lr.key === '__delta') { if (!refRl || pairs[k].key === A.refLap) continue; v = sampleAt(rl, A.cursor, 't') - sampleAt(refRl, A.cursor, 't'); }
+        else v = sampleAt(rl, A.cursor, lr.key);
+        if (!isFinite(v)) continue;
+        const txt = (lr.key === '__delta' ? fmtDelta(v) : v.toFixed(lr.meta.dec));
+        const tw = g.measureText(txt).width;
+        let bx = cx + 5; if (bx + tw + 8 > PADL + plotW) bx = cx - tw - 13;
+        g.fillStyle = 'rgba(13,16,20,.85)'; g.fillRect(bx - 2, yy - 9, tw + 6, 12);
+        g.fillStyle = LAP_COLORS[k % LAP_COLORS.length]; g.fillText(txt, bx + 1, yy);
+        yy += 13;
+        if (yy > lr.y1 - 2) break;
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  MAP                                                                */
+/* ------------------------------------------------------------------ */
+function mapFit() {
+  const C = A.C; if (!C) return;
+  const cv = $('#map'), w = cv.clientWidth || 300, h = cv.clientHeight || 200;
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (let i = 0; i < C.M; i++) {
+    if (C.x[i] < x0) x0 = C.x[i]; if (C.x[i] > x1) x1 = C.x[i];
+    if (C.y[i] < y0) y0 = C.y[i]; if (C.y[i] > y1) y1 = C.y[i];
+  }
+  const pad = 26;
+  const s = Math.min((w - pad * 2) / Math.max(1, x1 - x0), (h - pad * 2) / Math.max(1, y1 - y0));
+  A.mapT = { s, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, w, h };
+}
+function mapXY(x, y) {
+  const t = A.mapT;
+  return [t.w / 2 + (x - t.cx) * t.s, t.h / 2 - (y - t.cy) * t.s];
+}
+function mapInv(px, py) {
+  const t = A.mapT;
+  return [(px - t.w / 2) / t.s + t.cx, -(py - t.h / 2) / t.s + t.cy];
+}
+function speedColor(v, lo, hi) {
+  const f = clamp((v - lo) / Math.max(1, hi - lo), 0, 1);
+  const stops = [[56, 60, 220], [56, 189, 248], [74, 222, 128], [251, 191, 36], [248, 113, 113]];
+  const x = f * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(x)), t = x - i;
+  const a = stops[i], b = stops[i + 1];
+  return `rgb(${a[0] + (b[0] - a[0]) * t | 0},${a[1] + (b[1] - a[1]) * t | 0},${a[2] + (b[2] - a[2]) * t | 0})`;
+}
+
+function drawMap() {
+  const cv = $('#map'); if (!cv.clientWidth) return;
+  const { g, w, h } = dpiSetup(cv);
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = '#0a0d11'; g.fillRect(0, 0, w, h);
+  const C = A.C; if (!C) return;
+  if (!A.mapT || A.mapT.w !== w || A.mapT.h !== h) { mapFit(); }
+  A.mapT.w = w; A.mapT.h = h;
+
+  /* track band */
+  g.lineJoin = g.lineCap = 'round';
+  g.strokeStyle = '#1b222c'; g.lineWidth = Math.max(5, 11 * A.mapT.s);
+  g.beginPath();
+  for (let i = 0; i <= C.M; i++) { const [px, py] = mapXY(C.x[i % C.M], C.y[i % C.M]); i ? g.lineTo(px, py) : g.moveTo(px, py); }
+  g.closePath(); g.stroke();
+  g.strokeStyle = '#2c3743'; g.lineWidth = 1; g.setLineDash([5, 6]);
+  g.beginPath();
+  for (let i = 0; i <= C.M; i++) { const [px, py] = mapXY(C.x[i % C.M], C.y[i % C.M]); i ? g.lineTo(px, py) : g.moveTo(px, py); }
+  g.closePath(); g.stroke(); g.setLineDash([]);
+
+  /* racing lines */
+  const keys = A.sel.filter(k => A.lapByKey(k));
+  if (A.mapLine) {
+    for (let k = keys.length - 1; k >= 0; k--) {
+      const rl = A.getLap(keys[k]); if (!rl) continue;
+      const col = LAP_COLORS[k % LAP_COLORS.length];
+      const step = Math.max(1, Math.floor(rl.M / 1200));
+      if (A.mapColor && rl.speed) {
+        let lo = Infinity, hi = -Infinity;
+        for (let i = 0; i < rl.M; i++) { const v = rl.speed[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+        g.lineWidth = k === 0 ? 3 : 2;
+        for (let i = 0; i < rl.M - step; i += step) {
+          const [ax, ay] = mapXY((rl.lon[i] - A.P.lon0) * A.P.kx, (rl.lat[i] - A.P.lat0) * A.P.ky);
+          const j = i + step;
+          const [bx, by] = mapXY((rl.lon[j] - A.P.lon0) * A.P.kx, (rl.lat[j] - A.P.lat0) * A.P.ky);
+          g.strokeStyle = speedColor(rl.speed[i], lo, hi);
+          g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+        }
+      } else {
+        g.strokeStyle = col; g.lineWidth = k === 0 ? 2.4 : 1.6; g.globalAlpha = k === 0 ? 1 : .8;
+        g.beginPath();
+        for (let i = 0; i < rl.M; i += step) {
+          const [px, py] = mapXY((rl.lon[i] - A.P.lon0) * A.P.kx, (rl.lat[i] - A.P.lat0) * A.P.ky);
+          i ? g.lineTo(px, py) : g.moveTo(px, py);
+        }
+        g.stroke(); g.globalAlpha = 1;
+      }
+    }
+  }
+
+  /* sectors + S/F */
+  const markAt = (dist, color, label) => {
+    const k = clamp(Math.round(dist / C.len * C.M), 0, C.M - 1);
+    const p = (k + 1) % C.M;
+    const ex = C.x[p] - C.x[k], ey = C.y[p] - C.y[k], el = Math.hypot(ex, ey) || 1;
+    const nx = ey / el * 9, ny = -ex / el * 9;
+    const [ax, ay] = mapXY(C.x[k] + nx, C.y[k] + ny);
+    const [bx, by] = mapXY(C.x[k] - nx, C.y[k] - ny);
+    g.strokeStyle = color; g.lineWidth = 2; g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+    if (label) { g.fillStyle = color; g.font = '700 9px sans-serif'; g.textAlign = 'center'; g.fillText(label, (ax + bx) / 2, (ay + by) / 2 - 6); }
+  };
+  if (A.showSec) A.sectors.forEach((s, i) => markAt(s, '#4a5867', 'S' + (i + 2)));
+  markAt(0, '#ffffff', 'S/F');
+  for (const mk of A.markers) markAt(mk.d, '#fbbf24', '');
+
+  /* cursor position per lap */
+  for (let k = keys.length - 1; k >= 0; k--) {
+    const rl = A.getLap(keys[k]); if (!rl) continue;
+    const la = sampleAt(rl, A.cursor, 'lat'), lo = sampleAt(rl, A.cursor, 'lon');
+    if (!isFinite(la)) continue;
+    const [px, py] = mapXY((lo - A.P.lon0) * A.P.kx, (la - A.P.lat0) * A.P.ky);
+    g.fillStyle = LAP_COLORS[k % LAP_COLORS.length];
+    g.strokeStyle = '#04080c'; g.lineWidth = 2;
+    g.beginPath(); g.arc(px, py, k === 0 ? 6 : 4.5, 0, 7); g.fill(); g.stroke();
+  }
+
+  /* scale bar */
+  const target = 60 / A.mapT.s, unit = niceStep(target, 1);
+  const bw = unit * A.mapT.s;
+  g.strokeStyle = '#3a4655'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(10, h - 12); g.lineTo(10 + bw, h - 12); g.stroke();
+  g.fillStyle = '#6c7a8c'; g.font = '9.5px ui-monospace,monospace'; g.textAlign = 'left';
+  g.fillText(unit + ' m', 10, h - 16);
+}
+
+function redraw() { drawChart(); drawMap(); updateKpi(); }
+
+/* ===========================================================
+   Application state, loading pipeline, UI
+   =========================================================== */
+/* Multiple sessions can be loaded at once so different days can be overlaid.
+   sessions[0] is the base: its centerline defines the shared Track Distance
+   axis, and every other session is projected onto that same centerline -
+   otherwise the distance axes would not line up and comparison is meaningless.
+   A lap is addressed by the key "<sessionIndex>:<lapNumber>". */
+const A = {
+  sessions: [], _cache: new Map(),
+  sel: [], refLap: null, cursor: 0, view: { d0: 0, d1: 1000 },
+  sectors: [], markers: [], channels: [],
+  showSec: true, showDelta: true, mapLine: true, mapColor: false,
+  mapT: null, playing: false, sid: 'default',
+  step: 1, smooth: 5, invGx: false, invGy: false, gzGrav: true,
+  loadMode: 'replace',
+
+  get base() { return this.sessions[0] || null; },
+  get P() { return this.sessions[0] ? this.sessions[0].P : null; },
+  get C() { return this.sessions[0] ? this.sessions[0].C : null; },
+  get PR() { return this.sessions[0] ? this.sessions[0].PR : null; },
+  get laps() { return this.sessions[0] ? this.sessions[0].laps : []; },
+  get meta() { return this.sessions[0] ? this.sessions[0].meta : {}; },
+
+  key(si, num) { return si + ':' + num; },
+  siOf(k) { const i = String(k).indexOf(':'); return i < 0 ? -1 : +String(k).slice(0, i); },
+  numOf(k) { const i = String(k).indexOf(':'); return i < 0 ? NaN : +String(k).slice(i + 1); },
+  sessOf(k) { return this.sessions[this.siOf(k)] || null; },
+  lapByKey(k) {
+    const s = this.sessOf(k); if (!s) return null;
+    const n = this.numOf(k);
+    return s.laps.find(l => l.num === n) || null;
+  },
+  /* every session resamples against the SHARED base centerline */
+  getLap(k) {
+    const ck = k + '|' + this.smooth + '|' + this.invGx + this.invGy + this.gzGrav;
+    let v = this._cache.get(ck);
+    if (v) return v;
+    const s = this.sessOf(k), lap = this.lapByKey(k), C = this.C;
+    if (!s || !lap || !C || !s.PR || !s.P) return null;
+    v = resampleLap(s.P, C, s.PR, lap, Object.keys(s.P.ch), this.step, this.smooth);
+    v.sessionIndex = this.siOf(k); v.key = k;
+    if (this._cache.size > 60) this._cache.clear();
+    this._cache.set(ck, v);
+    return v;
+  },
+  allLapKeys() {
+    const out = [];
+    this.sessions.forEach((s, si) => s.laps.forEach(l => out.push(this.key(si, l.num))));
+    return out;
+  },
+  bestTimeAll() {
+    let b = Infinity;
+    for (const s of this.sessions) for (const l of s.laps) if (l.valid && l.time < b) b = l.time;
+    return isFinite(b) ? b : NaN;
+  },
+  clearCache() { this._cache.clear(); },
+};
+
+/* ---------------- G sign / gravity transforms ---------------- */
+function applyTransforms() {
+  for (const s of A.sessions) {
+    const P = s.P; if (!P || !P.raw) continue;
+    if (P.raw.gx) { const k = A.invGx ? -1 : 1, a = P.ch.gx, r = P.raw.gx; for (let i = 0; i < P.n; i++) a[i] = r[i] * k; }
+    if (P.raw.gy) { const k = A.invGy ? -1 : 1, a = P.ch.gy, r = P.raw.gy; for (let i = 0; i < P.n; i++) a[i] = r[i] * k; }
+    if (P.raw.gz) { const o = A.gzGrav ? 1 : 0, a = P.ch.gz, r = P.raw.gz; for (let i = 0; i < P.n; i++) a[i] = r[i] - o; }
+    if (P.ch.gcomb && P.ch.gx && P.ch.gy) { const a = P.ch.gcomb; for (let i = 0; i < P.n; i++) a[i] = Math.hypot(P.ch.gx[i], P.ch.gy[i]); }
+  }
+  A.clearCache();
+}
+
+/* =====================  LOADING  ===================== */
+const isCsv = n => /\.(csv|txt)$/i.test(n);
+
+async function collectFiles(fileList) {
+  const out = [];
+  for (const f of fileList) {
+    const buf = await f.arrayBuffer();
+    if (/\.zip$/i.test(f.name)) {
+      progress('ZIPを展開しています…', 5);
+      const items = await unzip(buf);
+      const g = f.name.replace(/\.zip$/i, '');
+      for (const it of items) if (isCsv(it.name)) out.push({ name: it.name, text: decodeText(it.bytes), group: g });
+    } else if (isCsv(f.name)) {
+      out.push({ name: f.name, text: decodeText(new Uint8Array(buf)), group: '' });
+    }
+  }
+  return out;
+}
+
+function classify(files) {
+  const r = { points: null, lapCsv: null, beacon: null, info: [], others: [], extraPoints: [] };
+  for (const f of files) {
+    const nl = f.text.indexOf('\n');
+    const head = splitLine(f.text.slice(0, nl < 0 ? 400 : nl).replace(/^\uFEFF/, '').trim()).map(norm);
+    f.head = head;
+    const has = k => head.indexOf(k) >= 0;
+    if (has('startwp') && has('finishwp') && has('duration')) { if (!r.lapCsv || /lap/i.test(f.name)) r.lapCsv = f; }
+    else if (has('lat') && has('lon') && has('heading') && has('width')) r.beacon = f;
+    else if (head.length === 2 && has('name') && has('value')) r.info.push(f);
+    else if ((has('lat') || has('latitude') || has('gpslatitude')) && (has('lon') || has('longitude') || has('lng') || has('gpslongitude'))) {
+      if (!r.points) r.points = f;
+      else if (f.text.length > r.points.text.length) { r.extraPoints.push(r.points); r.points = f; }
+      else r.extraPoints.push(f);
+    } else r.others.push(f);
+  }
+  if (!r.points) {
+    let big = null;
+    for (const f of files) if (!big || f.text.length > big.text.length) big = f;
+    r.points = big;
+  }
+  return r;
+}
+
+/* Split a drop into one group per source archive so that dropping two days'
+   ZIPs at once yields two sessions instead of silently keeping the larger. */
+function classifyGroups(files) {
+  const byGroup = new Map();
+  for (const f of files) {
+    const g = f.group || '';
+    let a = byGroup.get(g); if (!a) byGroup.set(g, a = []);
+    a.push(f);
+  }
+  return [...byGroup.entries()].map(([g, fs]) => ({ group: g, ...classify(fs) })).filter(s => s.points);
+}
+
+function readInfo(files) {
+  const kv = {};
+  for (const f of files) for (const row of parseCsvSmall(f.text).rows) if (row.name) kv[row.name] = row.value;
+  return kv;
+}
+
+async function loadFiles(fileList, mode) {
+  $('#err').classList.add('hide');
+  try {
+    progress('ファイルを読み込んでいます…', 2);
+    const files = await collectFiles(fileList);
+    if (!files.length) throw new Error('CSVファイルが見つかりませんでした。');
+    const groups = classifyGroups(files);
+    if (!groups.length) throw new Error('走行データのCSVが見つかりませんでした。');
+
+    let add = (mode || A.loadMode) === 'add' && A.sessions.length > 0;
+    const skipped = [];
+    for (const set of groups) {
+      for (const x of set.extraPoints) skipped.push(x.name);
+      const headRaw = splitLine(csvLines(set.points.text)[0].replace(/^\uFEFF/, '')).map(s => s.trim());
+      let map = autoMap(headRaw);
+      if (map.lat === undefined || map.lon === undefined) {
+        progress('', 0);
+        const m = await askMapping(headRaw, map);
+        if (!m) { progress('', 0); return; }
+        map = m;
+      }
+      await ingest(set, headRaw, map, add);
+      add = true;                 // further groups in the same drop are added, never replacing
+    }
+    if (skipped.length) toast('走行データが複数あったため ' + skipped.join(', ') + ' は読み込んでいません', 5000);
+    A.loadMode = 'replace';                 // the add-mode is a one-shot, set by the +比較 button
+  } catch (e) {
+    console.error(e);
+    $('#drop').classList.remove('hide');          // the message lives on the loader, so make sure it is visible
+    $('#dropClose').classList.toggle('hide', !A.C);
+    showErr(friendlyError(e));
+  }
+}
+
+function friendlyError(e) {
+  const m = String(e && e.message || e);
+  if (m === 'NOLATLON') return 'GPSデータを検出できませんでした。\n確認してください：\n・緯度(Latitude)の列\n・経度(Longitude)の列\n・CSVの文字コード';
+  return m + '\n\n読み込むファイルを確認してください。';
+}
+
+/* Everything below is built into locals first and only committed to A once the
+   whole import has succeeded. A half-applied import (new points, old laps and
+   projection) would leave every array index out of range. */
+async function ingest(set, headRaw, map, join) {
+  const joining = !!join && A.sessions.length > 0;
+  progress('走行データを解析しています…', 10);
+  const P = await buildPoints(set.points.text, map, f => progress('走行データを解析しています… ' + Math.round(f * 100) + '%', 10 + f * 35));
+  P.raw = {};
+  for (const k of ['gx', 'gy', 'gz']) if (P.ch[k]) P.raw[k] = P.ch[k].slice();
+
+  /* A joined session must be expressed in the base session's metric frame,
+     otherwise its X/Y are relative to a different origin and the shared
+     centerline is meaningless. */
+  if (joining) {
+    const B = A.sessions[0].P;
+    P.lat0 = B.lat0; P.lon0 = B.lon0; P.kx = B.kx; P.ky = B.ky;
+    for (let i = 0; i < P.n; i++) {
+      P.X[i] = (P.lon[i] - B.lon0) * B.kx;
+      P.Y[i] = (P.lat[i] - B.lat0) * B.ky;
+    }
+  }
+
+  /* ---- metadata ---- */
+  const info = readInfo(set.info);
+  const meta = {
+    track: info['C/B_name'] || info['track'] || '—',
+    model: info['model'] || '',
+    file: set.points.name,
+    freq: info['frequency'] || Math.round(P.hz),
+    raceType: info['RaceType'] || '',
+  };
+
+  /* ---- laps ---- */
+  progress('ラップを検出しています…', 48);
+  let laps = null, lapSrc = '';
+  if (set.lapCsv && map.id !== undefined && P.id) {
+    laps = lapsFromCsv(P, set.lapCsv); if (laps && laps.length) lapSrc = 'ロガーのラップ情報';
+  }
+  let CL = null;
+  if (set.beacon) {
+    const b = parseCsvSmall(set.beacon.text).rows[0];
+    if (b) CL = makeControlLine(P, +b.lat, +b.lon, +b.heading, Math.max(20, +b.width || 40));
+  }
+  if ((!laps || laps.length < 1) && joining && A.controlLine) {
+    CL = makeControlLine(P, A.controlLine.lat, A.controlLine.lon, A.controlLine.heading, A.controlLine.w);
+    laps = detectLaps(P, CL); if (laps.length) lapSrc = '基準セッションのライン';
+  }
+  if (!laps || laps.length < 1) {
+    if (!CL) CL = guessControlLine(P);
+    if (CL) { laps = detectLaps(P, CL); lapSrc = set.beacon ? 'ビーコン位置' : '自動推定'; }
+  }
+  if (!laps || !laps.length) throw new Error('ラップを検出できませんでした。\n走行していない区間だけのデータか、コース形状を読み取れない可能性があります。');
+
+  /* mark abnormal laps (pit in/out, red flag). Traffic can cost ~10-15% in an
+     endurance stint, so 1.3x median keeps racing laps but rejects pit laps. */
+  const times = laps.map(l => l.time).slice().sort((a, b) => a - b);
+  const med = times[times.length >> 1];
+  for (const l of laps) l.valid = l.time > med * 0.85 && l.time < med * 1.3;
+
+  const valid = laps.filter(l => l.valid);
+  const best = (valid.length ? valid : laps).reduce((a, b) => b.time < a.time ? b : a);
+
+  /* ---- centerline: the base session defines it, joined sessions reuse it ---- */
+  let C;
+  if (joining) C = A.sessions[0].C;
+  else { progress('コース形状を生成しています…', 55); C = buildCenterline(P, best.i0, best.i1, 1); }
+
+  progress('コース位置を計算しています…', 60);
+  const PR = await projectAll(P, C, f => progress('コース位置を計算しています… ' + Math.round(f * 100) + '%', 60 + f * 32));
+
+  /* A different circuit projects onto the base centerline as garbage, so refuse
+     it rather than drawing a meaningless overlay. */
+  if (joining) {
+    let on = 0; for (let i = 0; i < P.n; i++) on += PR.ok[i];
+    if (on / P.n < 0.5) throw new Error('このデータは基準セッションと同じコースではないようです。\n別コースの重ね合わせはできません。「読込」で新しく開いてください。');
+  }
+
+  /* ---- lap stats ---- */
+  for (const l of laps) Object.assign(l, lapStats(P, l));
+  const bestT = Math.min(...(valid.length ? valid : laps).map(l => l.time));
+  for (const l of laps) l.isBest = (l.time === bestT);
+
+  /* ---- commit: from here on nothing can fail partway ---- */
+  const started = new Date(P.t[0] * 1000);
+  const sess = {
+    P, C, PR, laps, meta, controlLine: CL, lapSrc,
+    id: 'cda_' + (meta.track || 'x') + '_' + Math.round(P.t[0]),
+    date: started,
+    short: (started.getMonth() + 1) + '/' + started.getDate(),
+    label: meta.track + ' ' + started.toLocaleString('ja-JP'),
+  };
+  if (joining) A.sessions.push(sess);
+  else { A.sessions = [sess]; A.controlLine = CL; A.lapSrc = lapSrc; }
+  const si = A.sessions.length - 1;
+  /* disambiguate same-day sessions so the legend stays readable */
+  const sameDay = A.sessions.filter(s => s.date.toDateString() === sess.date.toDateString());
+  if (sameDay.length > 1) sameDay.forEach((s, i) => {
+    s.short = (s.date.getMonth() + 1) + '/' + s.date.getDate() + String.fromCharCode(65 + i);
+  });
+  A.clearCache();
+
+  /* ---- defaults ---- */
+  if (!joining) {
+    A.sid = sess.id;
+    A.sectors = [Math.round(C.len / 3), Math.round(C.len * 2 / 3)];
+    A.markers = [];
+    A.view = { d0: 0, d1: C.len };
+    A.cursor = 0;
+    A.refLap = A.key(0, best.num);
+    A.sel = pickBest(3);
+  } else {
+    if (A.sel.length < 8) A.sel = A.sel.concat(A.key(si, best.num));
+  }
+  buildChannelList();
+  applyTransforms();
+  if (!joining) { loadNotes(); if (typeof videoResetForSession === 'function') videoResetForSession(); }
+  progress('完了', 100);
+  await sleep(60);
+
+  $('#drop').classList.add('hide'); $('#app').classList.remove('hide');
+  updateSessionBar();
+  $('#kTrack').textContent = A.meta.track;
+  $('#clInfo').innerHTML = A.controlLine
+    ? '緯度 ' + A.controlLine.lat.toFixed(6) + ' / 経度 ' + A.controlLine.lon.toFixed(6)
+    + '<br>方位 ' + A.controlLine.heading.toFixed(1) + '° / 幅 ' + A.controlLine.w + ' m<br>ラップ判定: ' + A.lapSrc
+    : 'ラップ判定: ' + A.lapSrc;
+  $('#dataInfo').innerHTML = A.sessions.map(s =>
+    '<b>' + s.short + '</b> ' + s.meta.file + '<br>点数: ' + s.P.n.toLocaleString()
+    + ' / ' + ((s.P.t[s.P.n - 1] - s.P.t[0]) / 60 | 0) + ' 分 · ' + s.laps.length + ' laps<br>'
+    + '速度の入力単位: 自動判定 <b>' + s.P.speedUnit + '</b> → km/h'
+    + (s.P.yawDerived ? '<br><span style="color:var(--warn)">ヨーレートはGPS方位から算出</span>' : '')
+  ).join('<hr class="sep">')
+    + '<hr class="sep">コース長(実測): ' + C.len.toFixed(1) + ' m（基準: ' + A.sessions[0].short + '）';
+  mapFit(); renderLapTable(); redraw();
+  saveRecent(set, sess.id, sess.label);
+}
+
+/* header line + the session chips under it */
+function updateSessionBar() {
+  const S = A.sessions;
+  if (!S.length) return;
+  $('#sessName').textContent = S.length === 1
+    ? S[0].meta.track + ' · ' + S[0].date.toLocaleString('ja-JP') + ' · ' + S[0].laps.length
+    + ' laps · ' + S[0].P.n.toLocaleString() + ' pts @' + S[0].meta.freq + 'Hz'
+    : S[0].meta.track + ' · ' + S.length + ' セッション比較中 · ' + S.map(s => s.short).join(' / ');
+  $('#btnAdd').classList.remove('hide');
+  const box = $('#sessChips');
+  box.innerHTML = '';
+  box.classList.toggle('hide', S.length < 2);
+  S.forEach((s, i) => {
+    const el = document.createElement('span');
+    el.className = 'chip';
+    const v = s.laps.filter(l => l.valid);
+    const bt = v.length ? Math.min.apply(null, v.map(l => l.time)) : NaN;
+    el.innerHTML = '<b>' + s.short + '</b> ' + s.laps.length + '周 <span class="bt">' + fmtTime(bt) + '</span>';
+    if (i > 0) {
+      const x = document.createElement('button');
+      x.textContent = '×'; x.title = 'この比較データを外す';
+      x.onclick = () => removeSession(i);
+      el.appendChild(x);
+    } else el.title = '基準セッション（コース形状の基準）';
+    box.appendChild(el);
+  });
+}
+
+function removeSession(si) {
+  if (si === 0 || !A.sessions[si]) return;
+  A.sessions.splice(si, 1);
+  /* lap keys embed the session index, so rebuild the selection */
+  const remap = k => {
+    if (k == null) return null;
+    const s = A.siOf(k); if (s === si) return null;
+    return A.key(s > si ? s - 1 : s, A.numOf(k));
+  };
+  A.sel = A.sel.map(remap).filter(Boolean);
+  A.refLap = remap(A.refLap) || A.sel[0] || null;
+  A.clearCache(); buildChannelList(); updateSessionBar(); renderLapTable(); redraw(); saveNotes();
+}
+
+function lapsFromCsv(P, f) {
+  const { rows } = parseCsvSmall(f.text);
+  const idAt = id => {                       // binary search in P.id
+    let lo = 0, hi = P.n - 1;
+    if (id <= P.id[0]) return 0; if (id >= P.id[hi]) return hi;
+    while (lo < hi - 1) { const m = (lo + hi) >> 1; if (P.id[m] <= id) lo = m; else hi = m; }
+    return lo;
+  };
+  const out = [];
+  for (const r of rows) {
+    const i0 = idAt(+r.start_wp), i1 = idAt(+r.finish_wp);
+    if (!(i1 > i0)) continue;
+    // refine the crossing instant with the interpolated line-cross point Qstarz stores
+    let tS = P.t[i0];
+    const ilat = +r.start_inter_lat, ilon = +r.start_inter_lon;
+    if (isFinite(ilat) && i0 + 1 < P.n) {
+      const ax = (P.lon[i0] - P.lon0) * P.kx, ay = (P.lat[i0] - P.lat0) * P.ky;
+      const bx = (P.lon[i0 + 1] - P.lon0) * P.kx, by = (P.lat[i0 + 1] - P.lat0) * P.ky;
+      const cx = (ilon - P.lon0) * P.kx, cy = (ilat - P.lat0) * P.ky;
+      const ex = bx - ax, ey = by - ay, L2 = ex * ex + ey * ey;
+      if (L2 > 0) {
+        const fr = clamp(((cx - ax) * ex + (cy - ay) * ey) / L2, 0, 1);
+        tS = P.t[i0] + (P.t[i0 + 1] - P.t[i0]) * fr;
+      }
+    }
+    const dur = +r.duration;
+    out.push({
+      num: out.length + 1, tStart: tS, tEnd: tS + (isFinite(dur) ? dur : P.t[i1] - tS),
+      time: isFinite(dur) ? dur : P.t[i1] - tS, i0, i1
+    });
+  }
+  return out;
+}
+
+function pickBest(k) {
+  const s = A.sessions[0]; if (!s) return [];
+  const v = s.laps.filter(l => l.valid).slice().sort((a, b) => a.time - b.time).slice(0, k).map(l => l.num);
+  const nums = v.length ? v.sort((a, b) => a - b) : s.laps.slice(0, k).map(l => l.num);
+  return nums.map(n => A.key(0, n));
+}
+
+/* =====================  LAP TABLE  ===================== */
+function renderLapTable() {
+  const tb = $('#lapBody'); tb.innerHTML = '';
+  const hide = $('#hideOut').checked;
+  const frag = document.createDocumentFragment();
+  const multi = A.sessions.length > 1;
+
+  A.sessions.forEach((sess, si) => {
+    const vl = sess.laps.filter(l => l.valid);
+    const bestT = vl.length ? Math.min.apply(null, vl.map(l => l.time)) : NaN;
+    if (multi) {                                  // session header row
+      const hr = document.createElement('tr');
+      hr.className = 'shead';
+      hr.innerHTML = '<td colspan="6">' + sess.short + '　' + sess.date.toLocaleDateString('ja-JP')
+        + '　<span style="color:var(--fg3)">best ' + fmtTime(bestT) + '</span></td>';
+      frag.appendChild(hr);
+    }
+    for (const l of sess.laps) {
+      if (hide && !l.valid) continue;
+      const key = A.key(si, l.num);
+      const tr = document.createElement('tr');
+      const ci = A.sel.indexOf(key);
+      if (ci >= 0) tr.className = 'sel';
+      if (key === A.refLap) tr.className += ' ref';
+      if (!l.valid) tr.className += ' out';
+      const col = ci >= 0 ? LAP_COLORS[ci % LAP_COLORS.length] : 'transparent';
+      const dlt = l.time - bestT;
+      tr.innerHTML =
+        '<td><span class="swatch" style="background:' + col + '"></span>' + l.num + '</td>' +
+        '<td class="' + (l.isBest ? 'best' : '') + '">' + fmtTime(l.time) + '</td>' +
+        '<td style="color:' + (dlt <= 0 ? 'var(--purple)' : 'var(--fg3)') + '">' + (l.isBest ? '—' : fmtDelta(dlt)) + '</td>' +
+        '<td>' + (isFinite(l.maxSpd) ? l.maxSpd.toFixed(0) : '—') + '</td>' +
+        '<td>' + (isFinite(l.avgSpd) ? l.avgSpd.toFixed(1) : '—') + '</td>' +
+        '<td><button data-ref="1" style="padding:0 6px;font-size:10px;'
+        + (key === A.refLap ? 'background:var(--good);color:#04120a;border-color:var(--good)' : '') + '">R</button></td>';
+      tr.onclick = e => {
+        if (e.target.dataset.ref) {
+          A.refLap = key;
+          if (!A.sel.includes(key)) toggleLap(key, true);
+          renderLapTable(); redraw(); return;
+        }
+        toggleLap(key);
+      };
+      frag.appendChild(tr);
+    }
+  });
+  tb.appendChild(frag);
+}
+
+/* "Lap 7" alone is ambiguous once two days are loaded */
+function lapLabel(k) {
+  const l = A.lapByKey(k), sx = A.sessOf(k);
+  if (!l) return '—';
+  return (A.sessions.length > 1 ? sx.short + ' ' : '') + 'Lap ' + l.num;
+}
+
+function lapSortKey(k) { return A.siOf(k) * 100000 + A.numOf(k); }
+
+function toggleLap(key, forceOn) {
+  const i = A.sel.indexOf(key);
+  if (i >= 0 && !forceOn) A.sel.splice(i, 1);
+  else if (i < 0) {
+    if (A.sel.length >= 8) { toast('同時表示は8ラップまでです'); return; }
+    A.sel.push(key); A.sel.sort((a, b) => lapSortKey(a) - lapSortKey(b));
+  }
+  if (!A.sel.includes(A.refLap)) A.refLap = A.sel[0] ?? null;
+  renderLapTable(); redraw(); saveNotes();
+}
+
+/* =====================  CHANNELS  ===================== */
+function buildChannelList() {
+  const order = ['speed', 'gx', 'gy', 'gz', 'yaw', 'gcomb', 'off', 'alt', 'rpm', 'throttle', 'brake', 'steer', 'watertemp', 'oiltemp', 'gear', 'heading'];
+  const avail = new Set(['off']);
+  for (const s of A.sessions) for (const k of Object.keys(s.P.ch)) avail.add(k);
+  const prev = new Map(A.channels.map(c => [c.key, c.on]));
+  const defOn = ['speed', 'gx', 'gy', 'gz', 'yaw'];
+  A.channels = order.filter(k => avail.has(k))
+    .map(k => ({ key: k, on: prev.has(k) ? prev.get(k) : defOn.includes(k) }));
+  const box = $('#chList'); box.innerHTML = '';
+  for (const c of A.channels) {
+    const m = CHMETA[c.key] || { label: c.key, unit: '' };
+    const row = document.createElement('label'); row.className = 'chrow';
+    row.innerHTML = '<input type="checkbox" ' + (c.on ? 'checked' : '') + '><span class="nm">' + m.label + '</span><span class="u">' + m.unit + '</span>';
+    row.querySelector('input').onchange = e => { c.on = e.target.checked; drawChart(); saveNotes(); };
+    box.appendChild(row);
+  }
+}
+
+/* =====================  KPI  ===================== */
+function updateKpi() {
+  if (!A.C) return;
+  const primKey = A.sel[0] ?? null;
+  const prim = primKey != null ? A.lapByKey(primKey) : null;
+  const primSess = primKey != null ? A.sessOf(primKey) : null;
+  const rl = primKey != null ? A.getLap(primKey) : null;
+  const ref = A.refLap != null ? A.getLap(A.refLap) : null;
+  const multi = A.sessions.length > 1;
+  $('#kLap').textContent = prim
+    ? (multi ? primSess.short + ' ' : '') + prim.num + '/' + primSess.laps.length : '—';
+  $('#kTime').textContent = prim ? fmtTime(prim.time) : '—';
+  $('#kBest').textContent = fmtTime(A.bestTimeAll());
+  $('#kPos').textContent = Math.round(A.cursor) + ' m';
+  if (rl) {
+    const sp = sampleAt(rl, A.cursor, 'speed');
+    $('#kSpd').textContent = isFinite(sp) ? sp.toFixed(0) + ' km/h' : '—';
+    $('#kGx').textContent = rl.gx ? sampleAt(rl, A.cursor, 'gx').toFixed(2) : '—';
+    $('#kGy').textContent = rl.gy ? sampleAt(rl, A.cursor, 'gy').toFixed(2) : '—';
+    $('#kYaw').textContent = rl.yaw ? sampleAt(rl, A.cursor, 'yaw').toFixed(1) : '—';
+  } else { $('#kSpd').textContent = $('#kGx').textContent = $('#kGy').textContent = $('#kYaw').textContent = '—'; }
+  const dEl = $('#kDelta');
+  if (rl && ref && primKey !== A.refLap) {
+    const d = sampleAt(rl, A.cursor, 't') - sampleAt(ref, A.cursor, 't');
+    dEl.textContent = fmtDelta(d);
+    dEl.style.color = d < 0 ? 'var(--good)' : d > 0 ? 'var(--bad)' : 'var(--fg)';
+  } else { dEl.textContent = '—'; dEl.style.color = ''; }
+  const b = [0, ...A.sectors, A.C.len];
+  let si = 0; for (let i = 0; i < b.length - 1; i++) if (A.cursor >= b[i]) si = i;
+  let secTxt = 'S' + (si + 1);
+  if (rl) { const st = sampleAt(rl, b[si + 1] - 0.001, 't') - sampleAt(rl, b[si], 't'); if (isFinite(st)) secTxt += '  ' + st.toFixed(2) + 's'; }
+  $('#kSec').textContent = secTxt;
+  $('#noteLapLbl').textContent = 'ラップ別メモ'
+    + (prim ? '（' + (multi ? primSess.short + ' ' : '') + 'Lap ' + prim.num + '）' : '');
+  syncLapNote();
+}
+
+/* =====================  CURSOR / VIEW  ===================== */
+function setCursor(d, redrawAll = true) {
+  const L = A.C ? A.C.len : 1;
+  A.cursor = ((d % L) + L) % L;
+  if (redrawAll) redraw();
+  if (typeof videoFollowCursor === 'function') videoFollowCursor();
+}
+function setView(d0, d1) {
+  const L = A.C.len;
+  let span = clamp(d1 - d0, 20, L);
+  d0 = clamp(d0, 0, L - span);
+  A.view = { d0, d1: d0 + span };
+  redraw();
+}
+function zoomView(factor, anchorD) {
+  const { d0, d1 } = A.view, span = d1 - d0;
+  const a = anchorD == null ? A.cursor : anchorD;
+  const f = clamp((a - d0) / span, 0, 1);
+  const ns = clamp(span * factor, 20, A.C.len);
+  setView(a - ns * f, a - ns * f + ns);
+}
+
+/* ===========================================================
+   Events, persistence, export, bootstrap
+   =========================================================== */
+
+/* ---------------- chart interaction ---------------- */
+(function () {
+  const cv = $('#chart');
+  let mode = null, lastX = 0, startView = null;
+  const dAt = px => {
+    const p = A._plot; if (!p) return 0;
+    return p.d0 + clamp((px - p.PADL) / p.plotW, 0, 1) * p.dspan;
+  };
+  cv.addEventListener('pointerdown', e => {
+    if (!A.C) return;
+    cv.setPointerCapture(e.pointerId);
+    lastX = e.offsetX;
+    if (e.shiftKey || e.button === 1 || e.button === 2) { mode = 'pan'; startView = { ...A.view }; }
+    else { mode = 'scrub'; setCursor(dAt(e.offsetX)); }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!mode) return;
+    if (mode === 'scrub') setCursor(dAt(e.offsetX));
+    else {
+      const p = A._plot; const dx = (e.offsetX - lastX) / p.plotW * p.dspan;
+      lastX = e.offsetX;
+      setView(A.view.d0 - dx, A.view.d1 - dx);
+    }
+  });
+  const end = e => { mode = null; try { cv.releasePointerCapture(e.pointerId); } catch (x) { } };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  cv.addEventListener('wheel', e => {
+    if (!A.C) return; e.preventDefault();
+    zoomView(e.deltaY > 0 ? 1.25 : 0.8, dAt(e.offsetX));
+  }, { passive: false });
+  cv.addEventListener('dblclick', () => setView(0, A.C.len));
+})();
+
+/* ---------------- map interaction ---------------- */
+(function () {
+  const cv = $('#map');
+  let mode = null, last = null;
+  const nearestD = (px, py) => {
+    const [x, y] = mapInv(px, py); const C = A.C;
+    let bi = 0, bd = Infinity;
+    for (let i = 0; i < C.M; i++) {
+      const dx = C.x[i] - x, dy = C.y[i] - y, d2 = dx * dx + dy * dy;
+      if (d2 < bd) { bd = d2; bi = i; }
+    }
+    return C.d[bi];
+  };
+  cv.addEventListener('pointerdown', e => {
+    if (!A.C) return; cv.setPointerCapture(e.pointerId);
+    last = { x: e.offsetX, y: e.offsetY };
+    if (e.shiftKey || e.button === 1 || e.button === 2) mode = 'pan';
+    else { mode = 'pick'; setCursor(nearestD(e.offsetX, e.offsetY)); }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!mode) return;
+    if (mode === 'pick') setCursor(nearestD(e.offsetX, e.offsetY));
+    else {
+      A.mapT.cx -= (e.offsetX - last.x) / A.mapT.s;
+      A.mapT.cy += (e.offsetY - last.y) / A.mapT.s;
+      last = { x: e.offsetX, y: e.offsetY }; drawMap();
+    }
+  });
+  const end = e => { mode = null; try { cv.releasePointerCapture(e.pointerId); } catch (x) { } };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  cv.addEventListener('wheel', e => {
+    if (!A.mapT) return; e.preventDefault();
+    const [wx, wy] = mapInv(e.offsetX, e.offsetY);
+    const f = e.deltaY > 0 ? 1 / 1.2 : 1.2;
+    A.mapT.s *= f;
+    const [nx, ny] = mapInv(e.offsetX, e.offsetY);
+    A.mapT.cx += wx - nx; A.mapT.cy += wy - ny;
+    drawMap();
+  }, { passive: false });
+})();
+
+/* ---------------- keyboard ---------------- */
+addEventListener('keydown', e => {
+  if (!A.C || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const stepM = e.shiftKey ? 25 : 2;
+  if (e.key === 'ArrowRight') { setCursor(A.cursor + stepM); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft') { setCursor(A.cursor - stepM); e.preventDefault(); }
+  else if (e.key === ' ') { togglePlay(); e.preventDefault(); }
+  else if (e.key === 's' || e.key === 'S') { A.showSec = !A.showSec; $('#gSec').classList.toggle('on', A.showSec); redraw(); }
+  else if (e.key === 'l' || e.key === 'L') { A.mapLine = !A.mapLine; $('#mapLine').classList.toggle('on', A.mapLine); drawMap(); }
+  else if (e.key === 'b' || e.key === 'B') { addMarker('Brake'); }
+  else if (e.key === '+' || e.key === '=') zoomView(0.8);
+  else if (e.key === '-') zoomView(1.25);
+  else if (e.key === '0') setView(0, A.C.len);
+});
+
+/* ---------------- playback ---------------- */
+let playRaf = 0, playT0 = 0, playElapsed0 = 0;
+function togglePlay() {
+  A.playing = !A.playing;
+  $('#btnPlay').textContent = A.playing ? '❚❚' : '▶';
+  $('#btnPlay').classList.toggle('on', A.playing);
+  if (!A.playing) { cancelAnimationFrame(playRaf); return; }
+  const rl = A.sel[0] != null ? A.getLap(A.sel[0]) : null;
+  if (!rl) { A.playing = false; $('#btnPlay').textContent = '▶'; return; }
+  playT0 = performance.now(); playElapsed0 = sampleAt(rl, A.cursor, 't');
+  const tick = () => {
+    if (!A.playing) return;
+    const el = playElapsed0 + (performance.now() - playT0) / 1000;
+    const M = rl.M;
+    if (el >= rl.t[M - 1]) { setCursor(0); playT0 = performance.now(); playElapsed0 = 0; }
+    else {
+      let lo = 0, hi = M - 1;
+      while (lo < hi - 1) { const m = (lo + hi) >> 1; if (rl.t[m] <= el) lo = m; else hi = m; }
+      setCursor(lo * rl.step);
+    }
+    playRaf = requestAnimationFrame(tick);
+  };
+  playRaf = requestAnimationFrame(tick);
+}
+
+/* ---------------- toolbar ---------------- */
+$('#btnPlay').onclick = togglePlay;
+function openLoader(mode) {
+  A.loadMode = mode;
+  $('#drop').classList.remove('hide'); $('#err').classList.add('hide'); progress('', 0);
+  $('#dropClose').classList.toggle('hide', !A.C);
+  $('#dzTitle').textContent = mode === 'add' ? '比較する別日のデータをドロップ' : 'CSV / ZIP をドロップ';
+  $('#dzAdd').classList.toggle('hide', mode !== 'add');
+  $('#btnAdd').classList.toggle('hide', !A.C);
+}
+$('#btnLoad').onclick = () => openLoader('replace');
+$('#btnAdd').onclick = () => openLoader('add');
+$('#dropClose').onclick = () => { $('#drop').classList.add('hide'); if (A.C) redraw(); };
+$('#btnReload').onclick = () => $('#btnLoad').click();
+$('#gZoomIn').onclick = () => zoomView(0.7);
+$('#gZoomOut').onclick = () => zoomView(1.4);
+$('#gReset').onclick = () => setView(0, A.C.len);
+$('#gSec').onclick = e => { A.showSec = !A.showSec; e.target.classList.toggle('on', A.showSec); redraw(); };
+$('#gDelta').onclick = e => { A.showDelta = !A.showDelta; e.target.classList.toggle('on', A.showDelta); drawChart(); };
+$('#mapLine').onclick = e => { A.mapLine = !A.mapLine; e.target.classList.toggle('on', A.mapLine); drawMap(); };
+$('#mapColor').onclick = e => { A.mapColor = !A.mapColor; e.target.classList.toggle('on', A.mapColor); drawMap(); };
+$('#mapFit').onclick = () => { mapFit(); drawMap(); };
+$('#lapBest').onclick = () => {
+  A.sel = pickBest(5);
+  A.refLap = A.sel.reduce((a, b) => A.lapByKey(b).time < A.lapByKey(a).time ? b : a, A.sel[0]);
+  renderLapTable(); redraw();
+};
+$('#lapClear').onclick = () => { A.sel = []; renderLapTable(); redraw(); };
+$('#hideOut').onchange = renderLapTable;
+
+$$('#tabbar button').forEach(b => b.onclick = () => {
+  $$('#tabbar button').forEach(x => x.classList.toggle('on', x === b));
+  ['laps', 'ch', 'note', 'set'].forEach(t => $('#tab-' + t).classList.toggle('hide', t !== b.dataset.tab));
+});
+
+/* settings */
+$('#invGx').onchange = e => { A.invGx = e.target.checked; applyTransforms(); redraw(); saveNotes(); };
+$('#invGy').onchange = e => { A.invGy = e.target.checked; applyTransforms(); redraw(); saveNotes(); };
+$('#gzGrav').onchange = e => { A.gzGrav = e.target.checked; applyTransforms(); redraw(); saveNotes(); };
+$('#smooth').oninput = e => { A.smooth = +e.target.value; $('#smLbl').textContent = A.smooth; A.clearCache(); redraw(); saveNotes(); };
+$('#secApply').onclick = () => {
+  const v = $('#secList').value.split(/[,、\s]+/).map(s => parseFloat(s)).filter(x => isFinite(x) && x > 0 && x < A.C.len);
+  A.sectors = [...new Set(v)].sort((a, b) => a - b); redraw(); saveNotes();
+};
+$('#secAdd').onclick = () => {
+  A.sectors = [...new Set([...A.sectors, Math.round(A.cursor)])].filter(x => x > 0 && x < A.C.len).sort((a, b) => a - b);
+  $('#secList').value = A.sectors.join(', '); redraw(); saveNotes(); toast('セクターを追加しました');
+};
+$('#clHere').onclick = () => {
+  if (A.sessions.length > 1) { toast('比較データを外してから設定してください'); return; }
+  const rl = A.sel[0] != null ? A.getLap(A.sel[0]) : null; if (!rl) return;
+  const la = sampleAt(rl, A.cursor, 'lat'), lo = sampleAt(rl, A.cursor, 'lon');
+  const hd = sampleAt(rl, A.cursor, 'heading');
+  const CL = makeControlLine(A.P, la, lo, isFinite(hd) ? hd : 0, 40);
+  const laps = detectLaps(A.P, CL);
+  if (laps.length < 2) { toast('この位置ではラップを検出できませんでした'); return; }
+  A.controlLine = CL; A.sessions[0].laps = laps;
+  const times = laps.map(l => l.time).sort((a, b) => a - b), med = times[times.length >> 1];
+  for (const l of laps) { l.valid = l.time > med * .85 && l.time < med * 1.3; Object.assign(l, lapStats(A.P, l)); }
+  const bt = Math.min(...laps.filter(l => l.valid).map(l => l.time));
+  for (const l of laps) l.isBest = l.time === bt;
+  A.clearCache(); A.sel = pickBest(3); A.refLap = A.sel[0];
+  $('#clInfo').innerHTML = `緯度 ${la.toFixed(6)} / 経度 ${lo.toFixed(6)}<br>ラップ判定: 手動設定 (${laps.length} laps)`;
+  renderLapTable(); redraw(); toast(laps.length + ' ラップを再検出しました');
+};
+['mDriver', 'mVehicle', 'mTire', 'mWeather', 'mSetup'].forEach(id => $('#' + id).oninput = saveNotes);
+$('#noteGlobal').oninput = saveNotes;
+$('#noteLap').oninput = saveNotes;
+$('#mkAdd').onclick = () => { addMarker($('#mkText').value.trim() || 'Mark'); $('#mkText').value = ''; };
+function addMarker(text) {
+  A.markers.push({ d: Math.round(A.cursor), text, lap: A.sel[0] ?? null });
+  A.markers.sort((a, b) => a.d - b.d); renderMarkers(); redraw(); saveNotes(); toast('マーカー追加: ' + Math.round(A.cursor) + 'm');
+}
+function renderMarkers() {
+  const box = $('#mkList'); box.innerHTML = '';
+  A.markers.forEach((m, i) => {
+    const row = document.createElement('div'); row.className = 'chrow';
+    row.innerHTML = `<span class="u" style="width:52px">${m.d}m</span><span class="nm">${m.text}</span>`;
+    const go = document.createElement('button'); go.textContent = '→'; go.style.padding = '1px 7px';
+    go.onclick = () => setCursor(m.d);
+    const del = document.createElement('button'); del.textContent = '×'; del.style.padding = '1px 7px';
+    del.onclick = () => { A.markers.splice(i, 1); renderMarkers(); redraw(); saveNotes(); };
+    row.append(go, del); box.appendChild(row);
+  });
+}
+
+/* ---------------- notes persistence (localStorage) ----------------
+   Storage is not guaranteed: opened as a local file:// page, in a private
+   window, or with site data blocked, these calls can throw. Nothing here is
+   essential to analysing a lap, so every access degrades to "no saved state"
+   rather than breaking the import. */
+const LS = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) { } },
+};
+function readState(k) { try { return JSON.parse(LS.get(k) || '{}'); } catch (e) { return {}; } }
+
+function saveNotes() {
+  if (!A.sid) return;
+  const prim = A.sel[0];
+  const st = readState(A.sid);
+  st.global = $('#noteGlobal').value;
+  st.lapNotes = st.lapNotes || {};
+  if (prim != null) st.lapNotes[prim] = $('#noteLap').value;
+  st.markers = A.markers; st.sectors = A.sectors; st.sel = A.sel; st.ref = A.refLap;
+  st.channels = A.channels.filter(c => c.on).map(c => c.key);
+  st.smooth = A.smooth; st.invGx = A.invGx; st.invGy = A.invGy; st.gzGrav = A.gzGrav;
+  st.meta = { driver: $('#mDriver').value, vehicle: $('#mVehicle').value, tire: $('#mTire').value, weather: $('#mWeather').value, setup: $('#mSetup').value };
+  A._notes = st;
+  LS.set(A.sid, JSON.stringify(st));
+}
+function loadNotes() {
+  const st = readState(A.sid);
+  A._notes = st;
+  if (st.sectors) A.sectors = st.sectors;
+  if (st.markers) A.markers = st.markers;
+  if (st.sel && st.sel.length) {          // a stored selection from an older format filters to nothing - keep the default then
+    const keep = st.sel.filter(k => A.lapByKey(k));
+    if (keep.length) A.sel = keep;
+  }
+  if (st.ref != null && A.lapByKey(st.ref)) A.refLap = st.ref;
+  if (st.smooth) { A.smooth = st.smooth; $('#smooth').value = st.smooth; $('#smLbl').textContent = st.smooth; }
+  A.invGx = !!st.invGx; A.invGy = !!st.invGy; A.gzGrav = st.gzGrav !== false;
+  $('#invGx').checked = A.invGx; $('#invGy').checked = A.invGy; $('#gzGrav').checked = A.gzGrav;
+  applyTransforms();
+  $('#noteGlobal').value = st.global || '';
+  $('#secList').value = A.sectors.join(', ');
+  const m = st.meta || {};
+  $('#mDriver').value = m.driver || ''; $('#mVehicle').value = m.vehicle || '';
+  $('#mTire').value = m.tire || ''; $('#mWeather').value = m.weather || ''; $('#mSetup').value = m.setup || '';
+  renderMarkers();
+  if (st.channels && st.channels.length) setTimeout(() => {
+    A.channels.forEach(c => c.on = st.channels.includes(c.key));
+    $$('#chList input').forEach((el, i) => el.checked = A.channels[i].on);
+    drawChart();
+  }, 0);
+}
+let _noteLapShown = undefined;
+function syncLapNote() {                    // never clobber text the user is typing
+  const prim = A.sel[0] ?? null;
+  if (prim === _noteLapShown) return;
+  _noteLapShown = prim;
+  const st = A._notes || {};
+  $('#noteLap').value = (st.lapNotes && prim != null) ? (st.lapNotes[prim] || '') : '';
+}
+$('#btnForget').onclick = () => {
+  if (!confirm('この端末に保存したメモ・設定・読み込み履歴を削除します。よろしいですか？')) return;
+  LS.del(A.sid); idbClear(); toast('保存データを削除しました');
+};
+
+/* ---------------- export ---------------- */
+/* Saving a file works two different ways depending on where this page runs:
+   opened as a local file a blob link is fine, but inside the published viewer
+   downloads are mediated and a plain link silently does nothing. */
+async function download(name, text, type = 'text/plain') {
+  const use = window.claude && window.claude.use;
+  if (use) {
+    let dl = null;
+    try { dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
+    if (!dl) { toast('この画面ではファイルの書き出しを利用できません'); return; }
+    try {
+      await dl.save({ filename: name, data: text });
+      toast('書き出しました: ' + name);
+    } catch (e) {
+      const c = e && e.code;
+      if (c === 'declined') return;                       // viewer said no - not an error
+      toast(c === 'too_large' ? 'データが大きすぎて書き出せません'
+        : c === 'rate_limited' ? '続けて書き出せません。少し待ってからもう一度お試しください'
+          : '書き出しできませんでした');
+    }
+    return;
+  }
+  const b = new Blob([text], { type: type + ';charset=utf-8' });
+  const u = URL.createObjectURL(b), a = document.createElement('a');
+  a.href = u; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 500);
+}
+$('#expCsv').onclick = () => {
+  const b = [0, ...A.sectors, A.C.len];
+  const head = ['session', 'date', 'lap', 'lap_time_s', 'valid', 'max_speed_kmh', 'min_speed_kmh', 'avg_speed_kmh',
+    'max_lat_g', 'max_brake_g', ...b.slice(0, -1).map((_, i) => 'sector' + (i + 1) + '_s')];
+  const lines = [head.join(',')];
+  for (const [si, sess] of A.sessions.entries()) for (const l of sess.laps) {
+    const rl = A.getLap(A.key(si, l.num));
+    const secs = b.slice(0, -1).map((s, i) => rl ? (sampleAt(rl, b[i + 1] - .001, 't') - sampleAt(rl, s, 't')).toFixed(3) : '');
+    lines.push([sess.short, sess.date.toISOString().slice(0, 10), l.num, l.time.toFixed(3), l.valid ? 1 : 0,
+    (l.maxSpd || 0).toFixed(1), (l.minSpd || 0).toFixed(1),
+    (l.avgSpd || 0).toFixed(2), (l.maxLat || 0).toFixed(3), (l.maxBrake || 0).toFixed(3), ...secs].join(','));
+  }
+  download('CDA_laps_' + (A.meta.track || 'session') + '.csv', '\uFEFF' + lines.join('\n'), 'text/csv');
+};
+$('#expJson').onclick = () => {
+  const st = readState(A.sid);
+  const b = [0, ...A.sectors, A.C.len];
+  const out = {
+    app: 'Circuit Data Analyzer', exported: new Date().toISOString(),
+    sessions: A.sessions.map(s => ({
+      name: s.short, track: s.meta.track, logger: s.meta.model, file: s.meta.file,
+      start: s.date.toISOString(), points: s.P.n, hz: s.meta.freq, laps: s.laps.length,
+      best_s: +Math.min.apply(null, s.laps.filter(l => l.valid).map(l => l.time)).toFixed(3)
+    })),
+    track_length_m: +A.C.len.toFixed(1), lap_detection: A.lapSrc,
+    vehicle: st.meta || {}, sectors_m: A.sectors, markers: A.markers,
+    notes: { session: st.global || '', laps: st.lapNotes || {} },
+    laps: A.sessions.flatMap((sess, si) => sess.laps.map(l => {
+      const rl = A.getLap(A.key(si, l.num));
+      return {
+        session: sess.short, lap: l.num, time_s: +l.time.toFixed(3), valid: l.valid, best: !!l.isBest,
+        max_speed_kmh: +(l.maxSpd || 0).toFixed(1), avg_speed_kmh: +(l.avgSpd || 0).toFixed(2),
+        max_lateral_g: +(l.maxLat || 0).toFixed(3), max_braking_g: +(l.maxBrake || 0).toFixed(3),
+        sectors_s: rl ? b.slice(0, -1).map((s, i) => +(sampleAt(rl, b[i + 1] - .001, 't') - sampleAt(rl, s, 't')).toFixed(3)) : []
+      };
+    }))
+  };
+  download('CDA_analysis_' + (A.meta.track || 'session') + '.json', JSON.stringify(out, null, 2), 'application/json');
+};
+
+/* ---------------- column mapping modal ---------------- */
+function askMapping(head, initial) {
+  return new Promise(res => {
+    const grid = $('#mapGrid'); grid.innerHTML = '';
+    const sels = {};
+    for (const f of FIELD_DEFS) {
+      if (f.key === 'id' || f.key === 'ms') continue;
+      const lbl = document.createElement('div'); lbl.className = 'lbl';
+      lbl.textContent = f.label + (f.req ? ' *' : '');
+      const sel = document.createElement('select');
+      sel.innerHTML = '<option value="-1">— 未使用 —</option>' + head.map((h, i) => `<option value="${i}">${h}</option>`).join('');
+      if (initial[f.key] !== undefined) sel.value = initial[f.key];
+      sels[f.key] = sel;
+      grid.append(lbl, sel);
+    }
+    $('#mapModal').classList.remove('hide');
+    const close = v => { $('#mapModal').classList.add('hide'); res(v); };
+    $('#mapCancel').onclick = () => close(null);
+    $('#mapOk').onclick = () => {
+      const m = {};
+      for (const k in sels) { const v = +sels[k].value; if (v >= 0) m[k] = v; }
+      if (m.lat === undefined || m.lon === undefined) { toast('緯度と経度は必須です'); return; }
+      close(m);
+    };
+  });
+}
+
+/* ---------------- recent sessions (IndexedDB) ---------------- */
+let idb = null;
+let idbDead = false;
+function idbOpen() {
+  return new Promise(res => {
+    if (idb) return res(idb);
+    if (idbDead || typeof indexedDB === 'undefined') return res(null);
+    try {
+      const rq = indexedDB.open('cda', 1);           // throws on file:// in Chrome
+      rq.onupgradeneeded = () => rq.result.createObjectStore('sessions', { keyPath: 'id' });
+      rq.onsuccess = () => res(idb = rq.result);
+      rq.onerror = () => { idbDead = true; res(null); };
+      rq.onblocked = () => res(null);
+    } catch (e) { idbDead = true; res(null); }
+  });
+}
+async function saveRecent(set, id, label) {
+  try {
+    const db = await idbOpen(); if (!db) return;
+    const files = [set.points, set.lapCsv, set.beacon, ...set.info].filter(Boolean)
+      .map(f => ({ name: f.name, text: f.text }));
+    const tx = db.transaction('sessions', 'readwrite');
+    tx.objectStore('sessions').put({ id: id || A.sid, name: A.meta.track, when: Date.now(), label: label || $('#sessName').textContent, files });
+    tx.oncomplete = listRecent;
+  } catch (e) { }
+}
+async function listRecent() {
+  const box = $('#recent'); box.innerHTML = '';
+  let db = null, rq = null;
+  try {
+    db = await idbOpen(); if (!db) return;
+    rq = db.transaction('sessions').objectStore('sessions').getAll();
+  } catch (e) { return; }
+  rq.onsuccess = () => {
+    const all = (rq.result || []).sort((a, b) => b.when - a.when).slice(0, 6);
+    if (!all.length) return;
+    const h = document.createElement('div'); h.className = 'note';
+    h.style.textAlign = 'left'; h.textContent = '最近のセッション（この端末に保存済み）';
+    box.appendChild(h);
+    for (const s of all) {
+      const b = document.createElement('button');
+      b.innerHTML = `▸ ${s.label || s.name}`;
+      b.onclick = async () => {
+        progress('保存データを読み込んでいます…', 5);
+        try {
+          const files = s.files.map(f => ({ ...f }));
+          const st = classify(files);
+          const headRaw = splitLine(csvLines(st.points.text)[0].replace(/^\uFEFF/, '')).map(x => x.trim());
+          await ingest(st, headRaw, autoMap(headRaw));
+        } catch (e) { showErr(friendlyError(e)); }
+      };
+      box.appendChild(b);
+    }
+  };
+}
+async function idbClear() {
+  try { const db = await idbOpen(); if (db) db.transaction('sessions', 'readwrite').objectStore('sessions').clear(); } catch (e) { }
+}
+
+/* ---------------- drop zone ---------------- */
+(function () {
+  const dz = $('#dz'), fi = $('#file');
+  dz.onclick = () => fi.click();
+  fi.onchange = () => { if (fi.files.length) loadFiles([...fi.files]); };
+  ['dragenter', 'dragover'].forEach(ev => addEventListener(ev, e => { e.preventDefault(); dz.classList.add('hot'); }));
+  ['dragleave', 'drop'].forEach(ev => addEventListener(ev, e => { e.preventDefault(); if (ev === 'dragleave' && e.relatedTarget) return; dz.classList.remove('hot'); }));
+  addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('hot');
+    const fs = [...(e.dataTransfer.files || [])];
+    if (fs.length) { $('#drop').classList.remove('hide'); loadFiles(fs); }
+  });
+})();
+
+/* ---------------- resize / boot ---------------- */
+let rzT = 0;
+addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { if (A.C) redraw(); }, 100); });
+listRecent();
+
+/* ===========================================================
+   Video sync
+   -----------------------------------------------------------
+   The data has an absolute clock (lap.tStart + elapsed). A clip has its own
+   0..duration clock. One number links them per clip:
+
+       t0 = (absolute session time) - (position in the clip)
+
+   Each clip carries its own t0, so a camera clock that drifts over a long
+   endurance race is corrected every time a new clip is aligned.
+   =========================================================== */
+const V = {
+  clips: [],            // {kind:'file'|'yt', name, url|vid, t0, dur, synced}
+  active: -1,
+  link: true,           // bidirectional following on/off
+  sessionIndex: 0,      // which loaded session the video belongs to
+  yt: null, ytReady: false, ytPending: null, ytCreating: false, ytReadyCbs: [],
+  driving: null,        // 'data' | 'video' - guards the feedback loop
+  poll: 0, lastSeek: 0, lastSeekTo: -1,
+};
+
+const YT_ORIGIN = 'https://www.youtube.com';
+const IS_FILE = location.protocol === 'file:';
+
+/* IFrame API error codes - each needs a different action from the user */
+const YT_ERRORS = {
+  2: '動画IDが正しくありません。URLを確認してください。',
+  5: 'この動画はHTML5プレーヤーで再生できませんでした。',
+  100: '動画が見つかりません。削除済みか非公開の可能性があります。',
+  101: 'この動画は所有者の設定で外部サイトへの埋め込みが許可されていません。',
+  150: 'この動画は所有者の設定で外部サイトへの埋め込みが許可されていません。',
+};
+
+/* ---------- helpers ---------- */
+function vClip() { return V.clips[V.active] || null; }
+function vHasSynced() { return V.clips.some(c => c.synced); }
+
+/* absolute session time under the cursor (NaN when unavailable) */
+function cursorAbsTime() {
+  const k = A.sel[0]; if (k == null) return NaN;
+  if (A.siOf(k) !== V.sessionIndex) return NaN;      // cursor is on another day
+  const lap = A.lapByKey(k), rl = A.getLap(k);
+  if (!lap || !rl) return NaN;
+  return lap.tStart + sampleAt(rl, A.cursor, 't');
+}
+
+/* inverse of the lap's time-vs-distance curve */
+function distAtElapsed(rl, el) {
+  const M = rl.M;
+  if (!(el > rl.t[0])) return 0;
+  if (el >= rl.tEnd) return rl.L;
+  let lo = 0, hi = M - 1;
+  while (lo < hi - 1) { const m = (lo + hi) >> 1; if (rl.t[m] <= el) lo = m; else hi = m; }
+  const span = rl.t[hi] - rl.t[lo];
+  return (lo + (span > 0 ? (el - rl.t[lo]) / span : 0)) * rl.step;
+}
+
+/* which clip covers an absolute time: synced clips sorted by t0 own the span
+   up to the next one (or their own duration when it is known) */
+function clipForTime(T) {
+  const s = V.clips.map((c, i) => ({ c, i })).filter(x => x.c.synced).sort((a, b) => a.c.t0 - b.c.t0);
+  for (let n = 0; n < s.length; n++) {
+    const cur = s[n], nxt = s[n + 1];
+    const end = cur.c.dur ? cur.c.t0 + cur.c.dur : (nxt ? nxt.c.t0 : Infinity);
+    if (T >= cur.c.t0 && T < (nxt ? Math.min(end, nxt.c.t0) : end)) return cur.i;
+  }
+  return -1;
+}
+
+/* ---------- player abstraction ---------- */
+function vTime() {
+  const c = vClip(); if (!c) return NaN;
+  if (c.kind === 'file') { const e = $('#vidFile'); return e ? e.currentTime : NaN; }
+  return V.yt && V.ytReady && V.yt.getCurrentTime ? V.yt.getCurrentTime() : NaN;
+}
+function vDuration() {
+  const c = vClip(); if (!c) return 0;
+  if (c.kind === 'file') { const e = $('#vidFile'); return e && isFinite(e.duration) ? e.duration : 0; }
+  return V.yt && V.ytReady && V.yt.getDuration ? V.yt.getDuration() : 0;
+}
+function vSeek(t) {
+  const c = vClip(); if (!c) return;
+  if (c.kind === 'file') { const e = $('#vidFile'); if (e) e.currentTime = Math.max(0, t); }
+  else if (V.yt && V.ytReady) V.yt.seekTo(Math.max(0, t), true);
+}
+function vIsPlaying() {
+  const c = vClip(); if (!c) return false;
+  if (c.kind === 'file') { const e = $('#vidFile'); return e && !e.paused && !e.ended; }
+  return V.yt && V.ytReady && V.yt.getPlayerState && V.yt.getPlayerState() === 1;
+}
+
+/* ---------- data -> video ---------- */
+function videoFollowCursor() {
+  if (!V.link || V.driving === 'video' || V.active < 0) return;
+  const c = vClip(); if (!c || !c.synced) return;
+  const T = cursorAbsTime(); if (!isFinite(T)) return;
+
+  const want = clipForTime(T);
+  if (want >= 0 && want !== V.active) { videoSetActive(want, T); return; }
+
+  const ct = T - c.t0;
+  if (ct < -1 || (c.dur && ct > c.dur + 1)) return;      // outside this clip
+  const now = performance.now();
+  /* YouTube seeks are slow and jerky, so rate-limit while scrubbing */
+  if (now - V.lastSeek < (c.kind === 'yt' ? 220 : 60)) return;
+  if (Math.abs(ct - V.lastSeekTo) < 0.05) return;
+  V.driving = 'data';
+  V.lastSeek = now; V.lastSeekTo = ct;
+  vSeek(ct);
+  setTimeout(() => { if (V.driving === 'data') V.driving = null; }, 120);
+  vUpdateBar();
+}
+
+/* ---------- video -> data ---------- */
+function videoTick() {
+  if (!V.link || V.active < 0) return;
+  const c = vClip(); if (!c || !c.synced) return;
+  if (V.driving === 'data') return;
+  if (!vIsPlaying()) return;
+  const ct = vTime(); if (!isFinite(ct)) return;
+  const T = c.t0 + ct;
+  const s = A.sessions[V.sessionIndex]; if (!s) return;
+  let lap = null;
+  for (const l of s.laps) if (T >= l.tStart && T < l.tEnd) { lap = l; break; }
+  if (!lap) { vUpdateBar(); return; }
+  const key = A.key(V.sessionIndex, lap.num);
+  V.driving = 'video';
+  if (A.sel[0] !== key) {                       // follow the video across laps
+    const rest = A.sel.filter(k => k !== key);
+    A.sel = [key].concat(rest).slice(0, 8);
+    renderLapTable();
+  }
+  const rl = A.getLap(key);
+  if (rl) setCursor(distAtElapsed(rl, T - lap.tStart));
+  V.driving = null;
+  vUpdateBar();
+}
+
+/* ---------- clip management ---------- */
+function videoSetActive(i, seekToAbs) {
+  const c = V.clips[i]; if (!c) return;
+  V.active = i;
+  const fileEl = $('#vidFile'), ytEl = $('#vidYT');
+  fileEl.classList.toggle('hide', c.kind !== 'file');
+  ytEl.classList.toggle('hide', c.kind !== 'yt');
+  if (c.kind === 'file') {
+    if (fileEl.dataset.url !== c.url) { fileEl.src = c.url; fileEl.dataset.url = c.url; }
+  } else if (V.yt && V.ytReady) {
+    V.yt.loadVideoById(c.vid);
+  }
+  if (seekToAbs != null && c.synced) setTimeout(() => vSeek(seekToAbs - c.t0), 300);
+  vRenderClips(); vUpdateBar();
+}
+
+function videoAddFiles(files) {
+  let added = 0;
+  for (const f of files) {
+    if (!/^video\//.test(f.type) && !/\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(f.name)) continue;
+    V.clips.push({ kind: 'file', name: f.name, url: URL.createObjectURL(f), t0: NaN, dur: 0, synced: false });
+    added++;
+  }
+  if (!added) { toast('動画ファイルが見つかりませんでした'); return; }
+  if (V.active < 0) videoSetActive(V.clips.length - added);
+  vRenderClips();
+  toast(added + ' 本の動画を追加しました。位置を合わせて「ここで同期」を押してください', 4200);
+}
+
+/* accepts watch / youtu.be / playlist URLs, one per line */
+function parseYouTube(text) {
+  const vids = [], lists = [];
+  for (const raw of String(text).split(/[\s,]+/)) {
+    if (!raw) continue;
+    let m = raw.match(/[?&]list=([A-Za-z0-9_-]+)/);
+    if (m) { lists.push(m[1]); continue; }
+    m = raw.match(/[?&]v=([A-Za-z0-9_-]{6,})/) || raw.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/)
+      || raw.match(/\/embed\/([A-Za-z0-9_-]{6,})/);
+    if (m) { vids.push(m[1]); continue; }
+    if (/^[A-Za-z0-9_-]{11}$/.test(raw)) vids.push(raw);
+  }
+  return { vids, lists };
+}
+
+function videoLoadYouTube(text) {
+  const { vids, lists } = parseYouTube(text);
+  if (!vids.length && !lists.length) { toast('YouTubeのURLを認識できませんでした'); return; }
+  if (IS_FILE) {
+    $('#vidMsg').classList.remove('hide');
+    $('#vidMsg').innerHTML = 'このページは <b>file://</b> で開かれています。この状態ではYouTubeの'
+      + '埋め込み再生がブロックされます。<br>同梱の <b>CDAを起動.bat</b> をダブルクリックして'
+      + '開き直すと利用できます。<br>（動画ファイルを選ぶ方式は file:// でも動作します）';
+  }
+  ytEnsureApi(() => {
+    if (lists.length) ytCuePlaylist(lists[0]);
+    else {
+      for (const v of vids) V.clips.push({ kind: 'yt', name: 'YouTube ' + v, vid: v, t0: NaN, dur: 0, synced: false });
+      ytEnsurePlayer(() => videoSetActive(V.clips.findIndex(c => c.kind === 'yt')));
+      vRenderClips();
+    }
+  });
+}
+
+/* The published page blocks every external host, so the API script cannot load
+   there. Say so plainly instead of failing silently. */
+function ytEnsureApi(cb) {
+  if (window.YT && window.YT.Player) return cb();
+  if (V.ytPending) { V.ytPending.push(cb); return; }
+  V.ytPending = [cb];
+  const done = ok => { const q = V.ytPending || []; V.ytPending = null; if (ok) q.forEach(f => f()); };
+  window.onYouTubeIframeAPIReady = () => done(true);
+  const s = document.createElement('script');
+  s.src = YT_ORIGIN + '/iframe_api';
+  s.onerror = () => { done(false); vShowYtBlocked(); };
+  setTimeout(() => { if (V.ytPending) { done(false); vShowYtBlocked(); } }, 8000);
+  document.head.appendChild(s);
+}
+function vShowYtBlocked() {
+  $('#vidMsg').classList.remove('hide');
+  $('#vidMsg').innerHTML =
+    'YouTubeプレーヤーを読み込めませんでした。<br>' +
+    '公開URL版は外部サーバーへの通信が遮断されているため、YouTube同期は<b>PCのローカル版 index.html</b> でのみ利用できます。<br>' +
+    'この画面では「動画ファイルを選ぶ」をお使いください。';
+}
+
+/* The player's methods (cuePlaylist, loadVideoById, getPlaylist...) do not exist
+   until onReady fires, so every caller has to queue behind it. */
+function ytEnsurePlayer(cb) {
+  if (V.yt && V.ytReady) return cb && cb();
+  if (V.ytCreating) { if (cb) V.ytReadyCbs.push(cb); return; }
+  V.ytCreating = true; V.ytReadyCbs = cb ? [cb] : [];
+  $('#vidYT').classList.remove('hide');
+  $('#vidEmpty').classList.add('hide');
+  V.yt = new YT.Player('vidYT', {
+    host: YT_ORIGIN,
+    playerVars: { rel: 0, playsinline: 1, modestbranding: 1 },
+    events: {
+      onReady: () => {
+        V.ytReady = true; V.ytCreating = false;
+        const q = V.ytReadyCbs; V.ytReadyCbs = [];
+        q.forEach(f => { try { f(); } catch (e) { console.error(e); } });
+        vUpdateBar();
+      },
+      onStateChange: () => vUpdateBar(),
+      onError: e => {
+        const code = e && e.data;
+        let msg = YT_ERRORS[code] || ('動画を再生できませんでした（コード ' + code + '）。');
+        /* From a file:// page the frame has no real origin, so YouTube rejects
+           the embed. This is by far the most common cause, so say it first. */
+        if (IS_FILE) msg = 'ファイルを直接開いた状態（file://）では、YouTubeの埋め込み再生が'
+          + 'ブロックされます。<br>同梱の <b>CDAを起動.bat</b> から開くと解決します。'
+          + '<br><span style="color:var(--fg3)">（参考: ' + msg + '）</span>';
+        $('#vidMsg').classList.remove('hide');
+        $('#vidMsg').innerHTML = msg;
+        toast(IS_FILE ? 'file:// ではYouTubeを再生できません。CDAを起動.bat をお使いください' : msg.replace(/<[^>]+>/g, ''), 6000);
+      },
+    }
+  });
+}
+
+function ytCuePlaylist(listId) {
+  ytEnsurePlayer(() => {
+    V.yt.cuePlaylist({ list: listId, listType: 'playlist' });
+    setTimeout(grab, 800);
+  });
+  let tries = 0;
+  const grab = () => {
+    if (!V.yt || !V.ytReady || !V.yt.getPlaylist) return setTimeout(grab, 400);
+    const ids = V.yt.getPlaylist();
+    if (!ids || !ids.length) {
+      if (++tries > 25) { toast('プレイリストを読み取れませんでした。動画URLを個別に貼り付けてください', 5000); return; }
+      return setTimeout(grab, 400);
+    }
+    for (let i = 0; i < ids.length; i++)
+      V.clips.push({ kind: 'yt', name: '動画 ' + (i + 1), vid: ids[i], t0: NaN, dur: 0, synced: false });
+    V.active = V.clips.length - ids.length;
+    vRenderClips(); vUpdateBar();
+    toast(ids.length + ' 本の動画を読み込みました。1本ずつ「ここで同期」で合わせてください', 5000);
+  };
+}
+
+/* ---------- sync ---------- */
+function videoSyncHere() {
+  const c = vClip(); if (!c) { toast('先に動画を読み込んでください'); return; }
+  const T = cursorAbsTime();
+  if (!isFinite(T)) { toast('同期する日のラップを選んでからにしてください'); return; }
+  const ct = vTime();
+  if (!isFinite(ct)) { toast('動画の再生位置を取得できませんでした'); return; }
+  c.t0 = T - ct;
+  c.dur = vDuration() || c.dur;
+  c.synced = true;
+  vRenderClips(); vUpdateBar();
+  toast('同期しました（この動画の0秒 = ' + new Date(c.t0 * 1000).toLocaleTimeString('ja-JP') + '）', 4000);
+  saveVideoState();
+}
+function videoUnsync() {
+  const c = vClip(); if (!c) return;
+  c.synced = false; c.t0 = NaN; vRenderClips(); vUpdateBar(); saveVideoState();
+}
+
+/* ---------- persistence (YouTube clips only; blob URLs die with the tab) ---------- */
+function saveVideoState() {
+  if (!A.sid) return;
+  const st = readState(A.sid);
+  st.video = {
+    sessionIndex: V.sessionIndex,
+    clips: V.clips.filter(c => c.kind === 'yt').map(c => ({ vid: c.vid, name: c.name, t0: c.t0, dur: c.dur, synced: c.synced }))
+  };
+  LS.set(A.sid, JSON.stringify(st));
+}
+function loadVideoState() {
+  const st = readState(A.sid);
+  if (!st.video || !st.video.clips || !st.video.clips.length) return;
+  V.sessionIndex = st.video.sessionIndex || 0;
+  V.restore = st.video.clips;
+  $('#vidRestore').classList.remove('hide');
+  $('#vidRestore').textContent = '前回のYouTube同期設定を復元 (' + st.video.clips.length + '本)';
+}
+
+/* A new session invalidates every clip: blob URLs belong to the old files and
+   a t0 aligned to another day is meaningless. */
+function videoResetForSession() {
+  for (const c of V.clips) if (c.kind === 'file' && c.url) { try { URL.revokeObjectURL(c.url); } catch (e) { } }
+  V.clips = []; V.active = -1; V.sessionIndex = 0; V.restore = null;
+  const fe = $('#vidFile');
+  if (fe) { fe.pause && fe.pause(); fe.removeAttribute('src'); fe.dataset.url = ''; }
+  $('#vidEmpty').classList.remove('hide');
+  $('#vidRestore').classList.add('hide');
+  $('#vidMsg').classList.add('hide');
+  vRenderClips(); vUpdateBar();
+  loadVideoState();
+}
+
+/* ---------- UI ---------- */
+function vRenderClips() {
+  const box = $('#vidClips'); if (!box) return;
+  box.innerHTML = '';
+  box.classList.toggle('hide', V.clips.length < 2);
+  V.clips.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'vclip' + (i === V.active ? ' on' : '') + (c.synced ? ' ok' : '');
+    b.textContent = (c.synced ? '● ' : '○ ') + (i + 1);
+    b.title = c.name + (c.synced ? '（同期済み）' : '（未同期）');
+    b.onclick = () => videoSetActive(i);
+    box.appendChild(b);
+  });
+}
+function vUpdateBar() {
+  const c = vClip();
+  const el = $('#vidInfo'); if (!el) return;
+  if (!c) { el.textContent = '動画が読み込まれていません'; return; }
+  const ct = vTime();
+  el.innerHTML = (c.synced ? '<b style="color:var(--good)">同期済み</b>' : '<b style="color:var(--warn)">未同期</b>')
+    + ' · ' + c.name.slice(0, 28)
+    + (isFinite(ct) ? ' · ' + ct.toFixed(1) + ' s' : '');
+}
+
+function videoTogglePanel(force) {
+  const p = $('#vidPanel');
+  const show = force != null ? force : p.classList.contains('hide');
+  p.classList.toggle('hide', !show);
+  $('#btnVideo').classList.toggle('on', show);
+  if (show && !V.poll) V.poll = setInterval(() => { videoTick(); if (!vIsPlaying()) vUpdateBar(); }, 200);
+  if (!show && V.poll) { clearInterval(V.poll); V.poll = 0; }
+  if (A.C) redraw();
+}
+
+/* ---------------- wiring ---------------- */
+$('#btnVideo').onclick = () => videoTogglePanel();
+$('#vidClose').onclick = () => videoTogglePanel(false);
+$('#vidLink').onclick = e => { V.link = !V.link; e.target.classList.toggle('on', V.link); };
+$('#vidPickFile').onclick = () => $('#vidFileInput').click();
+$('#vidAddMore').onclick = () => $('#vidFileInput').click();
+$('#vidFileInput').onchange = e => { if (e.target.files.length) videoAddFiles([...e.target.files]); e.target.value = ''; };
+$('#vidLoadUrl').onclick = () => videoLoadYouTube($('#vidUrl').value.trim());
+$('#vidUrl').onkeydown = e => { if (e.key === 'Enter') $('#vidLoadUrl').click(); };
+$('#vidSync').onclick = videoSyncHere;
+$('#vidUnsync').onclick = videoUnsync;
+$('#vidRestore').onclick = () => {
+  if (!V.restore) return;
+  ytEnsureApi(() => {
+    for (const c of V.restore) V.clips.push({ kind: 'yt', name: c.name, vid: c.vid, t0: c.t0, dur: c.dur, synced: c.synced });
+    ytEnsurePlayer(() => videoSetActive(V.clips.length - V.restore.length));
+    V.restore = null; $('#vidRestore').classList.add('hide');
+    vRenderClips();
+  });
+};
+
+/* hide the placeholder once something is loaded */
+const _vSetActive = videoSetActive;
+videoSetActive = function (i, seekToAbs) {
+  _vSetActive(i, seekToAbs);
+  $('#vidEmpty').classList.toggle('hide', V.clips.length > 0);
+};
+
+/* a local <video> drives the data directly while it plays */
+$('#vidFile').addEventListener('timeupdate', () => { if (vIsPlaying()) videoTick(); });
+$('#vidFile').addEventListener('seeked', () => { vUpdateBar(); if (V.driving !== 'data') videoTick(); });
+$('#vidFile').addEventListener('loadedmetadata', () => {
+  const c = vClip(); if (c && c.kind === 'file') { c.dur = $('#vidFile').duration || 0; vUpdateBar(); }
+});
+
+</script>
