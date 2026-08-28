@@ -1,0 +1,204 @@
+<div id="app" class="hide">
+  <div id="topbar">
+    <div id="logo">CDA <small>Circuit Data Analyzer</small></div>
+    <div id="sessName">—</div>
+    <button id="btnPlay" title="再生 / 停止 (Space)">▶</button>
+    <button id="btnAdd" class="hide" title="別日のデータを追加して重ね合わせる">＋比較</button>
+    <button id="btnVideo" title="動画を同期して見る">動画</button>
+    <button id="btnLoad" title="データを読み込む">読込</button>
+  </div>
+
+  <div id="sessChips" class="hide"></div>
+
+  <div id="kpi">
+    <div class="kv"><div class="k">Track</div><div class="v sm" id="kTrack">—</div></div>
+    <div class="kv"><div class="k">Lap</div><div class="v" id="kLap">—</div></div>
+    <div class="kv"><div class="k">Lap Time</div><div class="v" id="kTime">—</div></div>
+    <div class="kv"><div class="k">Best</div><div class="v" id="kBest">—</div></div>
+    <div class="kv"><div class="k">&Delta; Time</div><div class="v" id="kDelta">—</div></div>
+    <div class="kv"><div class="k">Position</div><div class="v" id="kPos">—</div></div>
+    <div class="kv"><div class="k">Speed</div><div class="v" id="kSpd">—</div></div>
+    <div class="kv"><div class="k">Long G</div><div class="v" id="kGx">—</div></div>
+    <div class="kv"><div class="k">Lat G</div><div class="v" id="kGy">—</div></div>
+    <div class="kv"><div class="k">Yaw</div><div class="v" id="kYaw">—</div></div>
+    <div class="kv"><div class="k">Sector</div><div class="v sm" id="kSec">—</div></div>
+  </div>
+
+  <div id="main">
+    <div id="left">
+      <div id="vidPanel" class="panel hide">
+        <div class="ph">
+          <span>Video</span><span class="sp"></span>
+          <button id="vidLink" class="on" title="グラフ・マップと連動">連動</button>
+          <button id="vidClose" title="閉じる">×</button>
+        </div>
+        <div id="vidStage">
+          <video id="vidFile" class="hide" controls playsinline></video>
+          <div id="vidYT" class="hide"></div>
+          <div id="vidEmpty">
+            <button id="vidPickFile">動画ファイルを選ぶ</button>
+            <div class="or">または</div>
+            <div class="urow">
+              <input type="text" id="vidUrl" placeholder="YouTubeのURL（動画 / プレイリスト）">
+              <button id="vidLoadUrl">読込</button>
+            </div>
+            <div class="note">YouTubeはPCのローカル版 index.html でのみ利用できます</div>
+            <button id="vidRestore" class="hide"></button>
+          </div>
+        </div>
+        <div id="vidBar">
+          <div id="vidClips" class="hide"></div>
+          <div id="vidInfo">動画が読み込まれていません</div>
+          <div class="urow">
+            <button id="vidSync" class="on" title="いま表示中のコマと、グラフのカーソル位置を一致させる">ここで同期</button>
+            <button id="vidUnsync">解除</button>
+            <button id="vidAddMore">動画を追加</button>
+          </div>
+          <div id="vidMsg" class="err hide"></div>
+        </div>
+        <input type="file" id="vidFileInput" accept="video/*" multiple style="display:none">
+      </div>
+
+      <div id="mapPanel" class="panel">
+        <div class="ph">
+          <span>Track Map</span><span class="sp"></span>
+          <button id="mapLine" class="on" title="走行ラインを表示">Line</button>
+          <button id="mapColor" title="速度で色分け">Speed</button>
+          <button id="mapFit" title="全体表示">Fit</button>
+        </div>
+        <div id="mapWrap"><canvas id="map"></canvas></div>
+      </div>
+
+      <div id="tabsPanel" class="panel">
+        <div id="tabbar">
+          <button data-tab="laps" class="on">Laps</button>
+          <button data-tab="ch">Channels</button>
+          <button data-tab="note">Notes</button>
+          <button data-tab="set">Setup</button>
+        </div>
+
+        <div class="tabbody" id="tab-laps">
+          <div style="display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap">
+            <button id="lapBest">ベスト5</button>
+            <button id="lapClear">選択解除</button>
+            <label style="display:flex;align-items:center;gap:4px;color:var(--fg2);font-size:11.5px">
+              <input type="checkbox" id="hideOut" checked style="accent-color:var(--accent)">異常ラップを隠す</label>
+          </div>
+          <table class="lt"><thead><tr>
+            <th>Lap</th><th>Time</th><th>&Delta;Best</th><th>Max</th><th>Avg</th><th>Ref</th>
+          </tr></thead><tbody id="lapBody"></tbody></table>
+        </div>
+
+        <div class="tabbody hide" id="tab-ch">
+          <div class="note">表示するグラフを選択します。チャンネルを増やせばグラフ段が増えます。</div>
+          <div id="chList"></div>
+        </div>
+
+        <div class="tabbody hide" id="tab-note">
+          <div class="fld"><label>解析メモ（この端末に自動保存されます）</label>
+            <textarea id="noteGlobal" rows="7" placeholder="セッション全体の気づき"></textarea></div>
+          <div class="fld"><label id="noteLapLbl">ラップ別メモ</label>
+            <textarea id="noteLap" rows="6" placeholder="選択中ラップへのメモ"></textarea></div>
+          <div class="fld"><label>現在位置にマーカーを追加</label>
+            <div class="row"><input type="text" id="mkText" placeholder="例: 1コーナー ブレーキ遅い" style="flex:1;min-width:130px">
+            <button id="mkAdd">追加</button></div></div>
+          <div id="mkList"></div>
+          <hr class="sep">
+          <div class="actions" style="justify-content:flex-start">
+            <button id="expJson">解析結果を書き出す</button>
+            <button id="expCsv">ラップ表をCSV出力</button>
+          </div>
+        </div>
+
+        <div class="tabbody hide" id="tab-set">
+          <h4>座標系 / 符号</h4>
+          <div class="fld"><div class="row">
+            <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="invGx" style="accent-color:var(--accent)">前後Gを反転</label>
+            <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="invGy" style="accent-color:var(--accent)">横Gを反転</label>
+          </div></div>
+          <div class="fld"><div class="row">
+            <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="gzGrav" checked style="accent-color:var(--accent)">上下Gから重力1Gを差し引く</label>
+          </div></div>
+          <h4>平滑化</h4>
+          <div class="fld"><label>移動平均 <span id="smLbl" class="mono">5</span> m（コース距離方向）</label>
+            <input type="range" id="smooth" min="1" max="31" step="2" value="5" style="width:100%"></div>
+          <hr class="sep">
+          <h4>セクター</h4>
+          <div class="fld"><label>区切り距離 [m]（カンマ区切り・0とゴールは自動）</label>
+            <div class="row"><input type="text" id="secList" placeholder="300, 600" style="flex:1;min-width:120px">
+            <button id="secApply">適用</button></div>
+            <div class="note">現在位置で区切るには <b>+</b> ボタン → <button id="secAdd" style="padding:1px 7px">+ ここで区切る</button></div>
+          </div>
+          <hr class="sep">
+          <h4>ラップ判定</h4>
+          <div class="fld"><label>コントロールライン</label>
+            <div class="note" id="clInfo">—</div>
+            <button id="clHere">現在位置をコントロールラインにする</button></div>
+          <hr class="sep">
+          <h4>セッション情報</h4>
+          <div class="fld"><label>ドライバー</label><input type="text" id="mDriver" placeholder="ドライバー名"></div>
+          <div class="fld"><label>車両</label><input type="text" id="mVehicle" placeholder="車両名"></div>
+          <div class="fld"><label>タイヤ / 空気圧</label><input type="text" id="mTire"></div>
+          <div class="fld"><label>天候 / 気温</label><input type="text" id="mWeather"></div>
+          <div class="fld"><label>セットアップ</label><textarea id="mSetup" rows="3"></textarea></div>
+          <hr class="sep">
+          <div class="actions" style="justify-content:flex-start">
+            <button id="btnReload">別のデータを読み込む</button>
+            <button id="btnForget">保存データを削除</button>
+          </div>
+          <div class="note" id="dataInfo"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="right">
+      <div class="ph">
+        <span>Channels vs Track Distance</span><span class="sp"></span>
+        <button id="gZoomOut" title="ズームアウト">−</button>
+        <button id="gZoomIn" title="ズームイン">＋</button>
+        <button id="gReset" title="全体表示">Fit</button>
+        <button id="gSec" class="on" title="セクター線 (S)">Sec</button>
+        <button id="gDelta" class="on" title="Δタイムグラフ">&Delta;</button>
+      </div>
+      <div id="chartWrap"><canvas id="chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div id="drop">
+  <div class="box">
+    <h1>Circuit <span>Data Analyzer</span></h1>
+    <p>サーキット走行データ解析ツール<br>
+      <span style="color:var(--fg3);font-size:12px">データは端末内だけで処理されます。どこにも送信されません。</span></p>
+    <div id="dz">
+      <div class="big" id="dzTitle">CSV / ZIP をドロップ</div>
+      <div id="dzAdd" class="hide" style="color:var(--good);font-size:12px;margin-bottom:6px">
+        現在のデータに<b>追加</b>して比較します（同じコースのみ）</div>
+      <div style="color:var(--fg2);font-size:12.5px">またはタップしてファイルを選択</div>
+      <div style="color:var(--fg3);font-size:11.5px;margin-top:9px">
+        Qstarz BL-1000GT (RCNX→CSV一式 / ZIPのまま可) ・ 汎用GPSロガーCSV<br>
+        <code>01_WayPoints.csv</code> と <code>02_Lap.csv</code> を同時に選ぶと精度が上がります<br>
+        別日のZIPを<b>同時に</b>ドロップすると、そのまま重ね合わせて比較できます
+      </div>
+    </div>
+    <input type="file" id="file" multiple accept=".csv,.txt,.zip" style="display:none">
+    <div id="prog"></div>
+    <div id="bar"><i></i></div>
+    <div id="err" class="err hide"></div>
+    <div id="recent"></div>
+    <div style="margin-top:14px"><button id="dropClose" class="hide">← 解析画面に戻る</button></div>
+  </div>
+</div>
+
+<div id="mapModal" class="modal hide"><div class="card">
+  <h3>CSV列の割り当て</h3>
+  <p class="note">このCSVは自動判別できませんでした。各項目にCSVの列を割り当ててください。<br>
+    緯度・経度は必須です。速度が無い場合はGPSから自動計算します。</p>
+  <div class="mapgrid" id="mapGrid"></div>
+  <div class="actions">
+    <button id="mapCancel">キャンセル</button>
+    <button id="mapOk" class="on">読み込む</button>
+  </div>
+</div></div>
+
+<div id="toast"></div>
