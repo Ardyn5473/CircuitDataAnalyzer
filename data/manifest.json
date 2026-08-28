@@ -1,0 +1,21 @@
+{
+  "title": "K4GP 走行データ",
+
+  "_comment_track": "全セッション共通のコースデータ。省略可。ベンダー製データを公開リポジトリに置かないこと。",
+  "track": ["data/DS3_1.zip"],
+
+  "sessions": [
+    {
+      "name": "美浜 レインボーカラーズ耐久",
+      "date": "2026-08-23",
+      "note": "220 laps",
+      "auto": true,
+      "files": ["data/0823美浜耐久_CSV一式.zip"]
+    },
+    {
+      "name": "次回セッション",
+      "date": "2026-09-xx",
+      "files": ["data/xxxx_CSV一式.zip"]
+    }
+  ]
+}
